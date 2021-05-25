@@ -72,3 +72,6 @@ A list containing:\tabular{ll}{
 \description{
 Convenient wrapper for training multiple caret models and making predictions on test data.
 }
+\seealso{
+\code{\link[caret]{trainControl}}
+}

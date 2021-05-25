@@ -29,6 +29,7 @@
 #'    \tab \cr
 #' }
 #'
+#' @seealso \code{\link[caret]{trainControl}}
 #' @export
 #'
 trainML_Models <-
