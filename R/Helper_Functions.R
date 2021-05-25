@@ -207,7 +207,8 @@ getLogratioFromList <-
 #' @return a symmetric adjacency matrix
 #' @export
 #'
-function(knnADJ_MAT){
+knnADJtoSYM = function(knnADJ_MAT){
+  ut = NULL
   adj = knnADJ_MAT
   adjT = knnADJ_MAT
   adjT  =t(adj)
@@ -215,7 +216,7 @@ function(knnADJ_MAT){
   uT = adjT[lower.tri(adjT)]
   df = data.frame(lt = lt,ut = uT)
   df = df%>%
-    dplyr::mutate(s = if_else(lt==ut,lt,pmax(ut,lt)))
+    dplyr::mutate(s = dplyr::if_else(lt==ut,lt,pmax(ut,lt)))
 
   adj[lower.tri(adj)]=df$s
   adj = t(adj)
