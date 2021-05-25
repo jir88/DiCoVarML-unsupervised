@@ -85,6 +85,8 @@ kfoldDataPartition <-
 
 #' Leave-One-Dataset-Out (LODO) cross validation partitioning
 #'
+#' @importFrom magrittr %>%
+#'
 #' @param df samples by features matrix to be partitioned. First columns must contain class labels.
 #' @param dataset_labels vector of dataset label for each sample in df
 #' @param seed random seed
@@ -127,6 +129,8 @@ lodo_partition = function (df, dataset_labels, seed = 8272008) {
 
 # -------------------------------------------------------------------------
 #' Leave-All_But-One-Out (LABOO) cross-validation partitioning
+#'
+#' @importFrom magrittr %>%
 #'
 #' @param df samples by features matrix to be partitioned. First columns must contain class labels.
 #' @param dataset_labels vector of dataset label for each sample in df
@@ -226,6 +230,8 @@ function(knnADJ_MAT){
 #' A pROC derived wrapper for computing sens-spec threshold data fro plotting ROC curves and confidence  intervals
 #'
 #' Provides an easy wrapper for extract ROC curve data from
+#'
+#' @importFrom magrittr %>%
 #'
 #' @param mroc a multi-class ROC object from pROC::multiclass.roc()
 #'
