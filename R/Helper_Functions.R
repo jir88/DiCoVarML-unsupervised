@@ -1,12 +1,12 @@
-#' Label Stratified Data Paritioning For K-Fold Cross-Validation
+#' Label Stratified Data Partitioning For K-Fold Cross-Validation
 #'
-#' Easily creates k train-test splits and stores it partition in a list. Allows for easy retirval of data paritions and sample idenitification.
+#' Easily creates k train-test splits and stores it partition in a list. Allows for easy retrieval of data partitions and sample identification.
 #'
 #' @importFrom magrittr %>%
-#' @param df  a data.frame with samples x features data.frame with the first columen being the class labels
-#' @param kfold number of data train-test spilts
+#' @param df  a data.frame with samples x features data.frame with the first column being the class labels
+#' @param kfold number of data train-test splits
 #' @param seed random seed; enables reproducibility of data partitions
-#' @param permuteLabel should the labels be permuted before peforming partitions. Useful when determining permutation significance of a classifier.
+#' @param permuteLabel should the labels be permuted before performing partitions. Useful when determining permutation significance of a classifier.
 #'
 #' @return a k-element list containing the train-test (xtrain_combinedFolds / xtest_kthFold) splits along with sample IDs (xtrain_IDs / xtest_IDs )
 #' @export
@@ -81,3 +81,87 @@ kfoldDataPartition <-
 
     return(foldData)
   }
+
+
+#' Leave-One-Dataset-Out (LODO) cross validation partitioning
+#'
+#' @param df samples by features matrix to be partitioned. First columns must contain class labels.
+#' @param dataset_labels vector of dataset label for each sample in df
+#' @param seed random seed
+#'
+#' @return a k-element list containing the train-test (xtrain_combinedFolds / xtest_kthFold) splits along with sample IDs (xtrain_IDs / xtest_IDs )#' @export
+#'
+lodo_partition = function (df, dataset_labels, seed = 8272008) {
+
+  set.seed(seed)
+  ID = NULL
+  fold = NULL
+
+  f = as.numeric(as.factor(dataset_labels))
+  df$fold = f
+  df_ = df
+  df_ = data.frame(ID = rownames(df_), df_)
+  foldData = list()
+  ph_list = list()
+  for (j in 1:dplyr::n_distinct(f)) {
+    xtrain = df %>% dplyr::filter(fold != j) %>% dplyr::select(-fold)
+    xtrain_ID = df_ %>% dplyr::filter(fold != j) %>% dplyr::select(ID,
+                                                                   1, 2, fold)
+    xtest = df %>% dplyr::filter(fold == j) %>% dplyr::select(-fold)
+    xtest_ID = df_ %>% dplyr::filter(fold == j) %>% dplyr::select(ID,
+                                                                  1, 2, fold)
+    ph_list[[1]] = xtrain
+    names(ph_list)[1] = "xtrain_combinedFolds"
+    ph_list[[2]] = xtest
+    names(ph_list)[2] = "xtest_kthFold"
+    ph_list[[3]] = xtrain_ID
+    names(ph_list)[3] = "xtrain_IDs"
+    ph_list[[4]] = xtest_ID
+    names(ph_list)[4] = "xtest_IDs"
+    foldData[[j]] = ph_list
+    names(foldData)[j] = paste("fold_", j, sep = "")
+  }
+  return(foldData)
+}
+
+
+#' Leave-All_But-One-Out (LABOO) cross-validation partitioning
+#'
+#' @param df samples by features matrix to be partitioned. First columns must contain class labels.
+#' @param dataset_labels vector of dataset label for each sample in df
+#' @param seed random seed
+#'
+#' @return a k-element list containing the train-test (xtrain_combinedFolds / xtest_kthFold) splits along with sample IDs (xtrain_IDs / xtest_IDs )#' @export
+#'
+laboo_partition = function (df, dataset_labels, seed = 8272008) {
+
+  set.seed(seed)
+  ID = NULL
+  fold = NULL
+
+  f = as.numeric(as.factor(dataset_labels))
+  df$fold = f
+  df_ = df
+  df_ = data.frame(ID = rownames(df_), df_)
+  foldData = list()
+  ph_list = list()
+  for (j in 1:dplyr::n_distinct(f)) {
+    xtrain = df %>% dplyr::filter(fold == j) %>% dplyr::select(-fold)
+    xtrain_ID = df_ %>% dplyr::filter(fold == j) %>% dplyr::select(ID,
+                                                                   1, 2, fold)
+    xtest = df %>% dplyr::filter(fold != j) %>% dplyr::select(-fold)
+    xtest_ID = df_ %>% dplyr::filter(fold != j) %>% dplyr::select(ID,
+                                                                  1, 2, fold)
+    ph_list[[1]] = xtrain
+    names(ph_list)[1] = "xtrain_combinedFolds"
+    ph_list[[2]] = xtest
+    names(ph_list)[2] = "xtest_kthFold"
+    ph_list[[3]] = xtrain_ID
+    names(ph_list)[3] = "xtrain_IDs"
+    ph_list[[4]] = xtest_ID
+    names(ph_list)[4] = "xtest_IDs"
+    foldData[[j]] = ph_list
+    names(foldData)[j] = paste("fold_", j, sep = "")
+  }
+  return(foldData)
+}

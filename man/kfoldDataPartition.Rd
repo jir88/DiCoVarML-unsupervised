@@ -2,24 +2,24 @@
 % Please edit documentation in R/Helper_Functions.R
 \name{kfoldDataPartition}
 \alias{kfoldDataPartition}
-\title{Label Stratified Data Paritioning For K-Fold Cross-Validation}
+\title{Label Stratified Data Partitioning For K-Fold Cross-Validation}
 \usage{
 kfoldDataPartition(df, kfold, seed = 8272008, permuteLabel = F)
 }
 \arguments{
-\item{df}{a data.frame with samples x features data.frame with the first columen being the class labels}
+\item{df}{a data.frame with samples x features data.frame with the first column being the class labels}
 
-\item{kfold}{number of data train-test spilts}
+\item{kfold}{number of data train-test splits}
 
 \item{seed}{random seed; enables reproducibility of data partitions}
 
-\item{permuteLabel}{should the labels be permuted before peforming partitions. Useful when determining permutation significance of a classifier.}
+\item{permuteLabel}{should the labels be permuted before performing partitions. Useful when determining permutation significance of a classifier.}
 }
 \value{
 a k-element list containing the train-test (xtrain_combinedFolds / xtest_kthFold) splits along with sample IDs (xtrain_IDs / xtest_IDs )
 }
 \description{
-Easily creates k train-test splits and stores it partition in a list. Allows for easy retirval of data paritions and sample idenitification.
+Easily creates k train-test splits and stores it partition in a list. Allows for easy retrieval of data partitions and sample identification.
 }
 \examples{
 \dontrun{
