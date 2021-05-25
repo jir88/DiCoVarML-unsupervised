@@ -2,6 +2,8 @@
 #'
 #'Performs feature selection on all PLR using BORUTA or LASSO. Can also return all PLR without feature selection.
 #'
+#' @importFrom magrittr %>%
+#'
 #' @param train_data a samples by log ratio matrix for featire discovery on training data
 #' @param y_train training set class lables
 #' @param test_data a samples by log ratio matrix to subset and return. Note key log-ratios are discovered using training set.
