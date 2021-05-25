@@ -125,6 +125,7 @@ lodo_partition = function (df, dataset_labels, seed = 8272008) {
 }
 
 
+# -------------------------------------------------------------------------
 #' Leave-All_But-One-Out (LABOO) cross-validation partitioning
 #'
 #' @param df samples by features matrix to be partitioned. First columns must contain class labels.
@@ -170,6 +171,7 @@ laboo_partition = function (df, dataset_labels, seed = 8272008) {
 
 
 
+# -------------------------------------------------------------------------
 #' Get log-ratios from a list of ratio names
 #'
 #' @param Ratio Ratio names where numerator and denominator are separated by '___'. Numerator and Denominator names should match column names of raMatrix
@@ -187,4 +189,36 @@ getLogratioFromList <-
     ad = selEnergyPermR::stageData(raMatrix,labels = Class)
     selEnergyPermR::getLogRatios(ad$allData,el_)
   }
+
+
+
+
+
+
+# -------------------------------------------------------------------------
+#' Make a KNN or non-symmetric adjacency matrix symmetric
+#'
+#' @param knnADJ_MAT a non-symmetric adjacency matrix to be made symmetric
+#'
+#' @return a symmetric adjacency matrix
+#' @export
+#'
+function(knnADJ_MAT){
+  adj = knnADJ_MAT
+  adjT = knnADJ_MAT
+  adjT  =t(adj)
+  lt = adj[lower.tri(adj)]
+  uT = adjT[lower.tri(adjT)]
+  df = data.frame(lt = lt,ut = uT)
+  df = df%>%
+    dplyr::mutate(s = if_else(lt==ut,lt,pmax(ut,lt)))
+
+  adj[lower.tri(adj)]=df$s
+  adj = t(adj)
+  adj[lower.tri(adj)]=df$s
+
+  return(adj)
+}
+
+
 
