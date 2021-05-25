@@ -31,7 +31,7 @@ dat = data.frame(CLass =sample(x = c("A","B"),size = 50,replace = T) ,
 foldData = kfoldDataPartition(df = dat,
    kfold = 5,
    permuteLabel = F,
-   seed = sd)
+   seed = 1)
 
  ## get first fold
   trainData = foldData[[1]]$xtrain_combinedFolds

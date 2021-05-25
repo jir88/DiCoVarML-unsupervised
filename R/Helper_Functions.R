@@ -21,7 +21,7 @@
 #' foldData = kfoldDataPartition(df = dat,
 #'    kfold = 5,
 #'    permuteLabel = F,
-#'    seed = sd)
+#'    seed = 1)
 #'
 #'  ## get first fold
 #'   trainData = foldData[[1]]$xtrain_combinedFolds

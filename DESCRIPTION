@@ -12,4 +12,5 @@ RoxygenNote: 7.1.1.9001
 Imports: 
     caret (>= 6.0-86),
     dplyr (>= 1.0.2),
-    magrittr (>= 1.5)
+    magrittr (>= 1.5),
+    selEnergyPermR
