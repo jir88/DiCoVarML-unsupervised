@@ -165,3 +165,26 @@ laboo_partition = function (df, dataset_labels, seed = 8272008) {
   }
   return(foldData)
 }
+
+
+
+
+
+#' Get log-ratios from a list of ratio names
+#'
+#' @param Ratio Ratio names where numerator and denominator are separated by '___'. Numerator and Denominator names should match column names of raMatrix
+#' @param raMatrix a zero-imputed relative abundance or count matrix where the log-ratios will be computed from
+#' @param Class class labels for raMAtrix samples.
+#'
+#' @return a set of logratios corresponding the the Ratio list input provided computed from the raMatrix
+#' @export
+#'
+getLogratioFromList <-
+  function(Ratio,raMatrix,Class){
+    Ratio = data.frame(Ratio)
+    keyRats = tidyr::separate(Ratio,1,into = c("Num","Denom"),sep = "___",remove = F)
+    el_= data.frame(keyRats$Num,keyRats$Denom,keyRats$Ratio)
+    ad = selEnergyPermR::stageData(raMatrix,labels = Class)
+    selEnergyPermR::getLogRatios(ad$allData,el_)
+  }
+

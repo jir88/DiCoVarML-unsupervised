@@ -2,6 +2,7 @@
 
 export(computeDCV)
 export(extractTrainTestSplit)
+export(getLogratioFromList)
 export(kfoldDataPartition)
 export(trainML_Models)
 importFrom(magrittr,"%>%")
