@@ -2,4 +2,5 @@
 
 export(extractTrainTestSplit)
 export(kfoldDataPartition)
+export(trainML_Models)
 importFrom(magrittr,"%>%")
