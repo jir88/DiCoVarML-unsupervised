@@ -15,5 +15,6 @@ Imports:
     diffCompVarRcpp,
     dplyr (>= 1.0.2),
     magrittr (>= 1.5),
+    pROC (>= 1.17.0.1),
     selEnergyPermR,
     tidyr (>= 1.1.3)

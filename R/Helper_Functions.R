@@ -222,3 +222,41 @@ function(knnADJ_MAT){
 
 
 
+# -------------------------------------------------------------------------
+#' A pROC derived wrapper for computing sens-spec threshold data fro plotting ROC curves and confidence  intervals
+#'
+#' Provides an easy wrapper for extract ROC curve data from
+#'
+#' @param mroc a multi-class ROC object from pROC::multiclass.roc()
+#'
+#' @return a data.frame with sens., specificity and confidence interval
+#' @export
+#'
+#' @seealso \code{\link[pROC]{multiclass.roc}}
+#'
+rocPlot = function(mroc){
+  rs <-mroc[['rocs']]
+  nms = names(rs)
+  roc.df = data.frame()
+  spec = NULL
+  sens = NULL
+  for(i in 1:length(nms)){
+    rc = rs[[i]]
+    x = pROC::ci.auc(rc[[1]])
+    x = paste0(" AUC=",round(x[2],digits = 3),
+               " (95% CI:",round(x[1],digits = 3),"-",round(x[3],digits = 3),")")
+    ph = data.frame(sens = rc[[1]]$sensitivities,spec = 1 - rc[[1]]$specificities)
+    ph = ph %>%
+      dplyr::group_by(factor(spec)) %>%
+      dplyr::summarise_all(.funs = max)
+    ph = data.frame(ph)[,-1]
+    ph = rbind(data.frame(sens = 0,spec = 0),ph)
+    ph$Comp = paste0(nms[i],x)
+    roc.df = rbind(roc.df,ph)
+  }
+  roc.df
+}
+
+
+
+
