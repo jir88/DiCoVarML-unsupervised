@@ -11,6 +11,9 @@ LazyData: true
 RoxygenNote: 7.1.1.9001
 Imports: 
     caret (>= 6.0-86),
+    combinat (>= 0.0-8),
+    diffCompVarRcpp,
     dplyr (>= 1.0.2),
     magrittr (>= 1.5),
-    selEnergyPermR
+    selEnergyPermR,
+    tidyr (>= 1.1.3)
