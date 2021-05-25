@@ -10,10 +10,12 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1.9001
 Imports: 
+    Boruta (>= 7.0.0),
     caret (>= 6.0-86),
     combinat (>= 0.0-8),
     diffCompVarRcpp,
     dplyr (>= 1.0.2),
+    glmnet (>= 4.1-1),
     magrittr (>= 1.5),
     pROC (>= 1.17.0.1),
     selEnergyPermR,
