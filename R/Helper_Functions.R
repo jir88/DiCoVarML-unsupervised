@@ -93,6 +93,8 @@ kfoldDataPartition <-
 #'
 #' @return a k-element list containing the train-test (xtrain_combinedFolds / xtest_kthFold) splits along with sample IDs (xtrain_IDs / xtest_IDs )#' @export
 #'
+#' @export
+#'
 lodo_partition = function (df, dataset_labels, seed = 8272008) {
 
   set.seed(seed)
@@ -137,6 +139,8 @@ lodo_partition = function (df, dataset_labels, seed = 8272008) {
 #' @param seed random seed
 #'
 #' @return a k-element list containing the train-test (xtrain_combinedFolds / xtest_kthFold) splits along with sample IDs (xtrain_IDs / xtest_IDs )#' @export
+#'
+#' @export
 #'
 laboo_partition = function (df, dataset_labels, seed = 8272008) {
 
