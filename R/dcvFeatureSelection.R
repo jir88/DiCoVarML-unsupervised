@@ -218,6 +218,7 @@ dcvFeatureSelection = function(train_data,
                 dcv_adj = dcv_adj[bool,bool]
 
                 knns = c(3,5,7,9,12,nrow(ph))
+                knns = unique(knns[knns<=nrow(ph)] )
                 knn_search = data.frame()
                 feature_list = list()
                 imp_list = list()
@@ -270,7 +271,7 @@ dcvFeatureSelection = function(train_data,
 
                 }
 
-                kk = which.max(knn_search$AUC)
+                kk = which.max(knn_search$AUC)[1]
                 trainData2 = feature_list[[kk]]$train
                 testData2 = feature_list[[kk]]$test
                 cn = colnames(trainData2)
