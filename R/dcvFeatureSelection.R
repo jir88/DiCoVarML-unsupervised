@@ -222,6 +222,7 @@ dcvFeatureSelection = function(train_data,
                 knn_search = data.frame()
                 feature_list = list()
                 imp_list = list()
+                flp = 1
                 for(k in knns ){
                   g = simplexDataAugmentation::knn_graph(dcv_adj,K = k,sim_ = F)
                   g = g$Graph
@@ -264,8 +265,9 @@ dcvFeatureSelection = function(train_data,
                   testH = unique(ac$AUC);testH
                   imp.df = data.frame(ac[,c(-2,-4)])
 
-                  imp_list[[as.character(k)]] = imp.df
-                  feature_list[[as.character(k)]] = list(train = trainData2,test = testData2)
+                  imp_list[[flp]] = imp.df
+                  feature_list[[flp]] = list(train = trainData2,test = testData2)
+                  flp = flp+1
                   ph.perf = data.frame(K = k,ratios = igraph::ecount(g),AUC = testH)
                   knn_search = rbind(knn_search,ph.perf)
 
