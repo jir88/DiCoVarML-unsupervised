@@ -109,14 +109,13 @@ dcvFeatureSelection = function(train_data,
 
             suppressMessages(suppressWarnings({
               ## Scale Scores
-              scr = dcv
-              scr$rowmean[scr$rowmean<0] = 0
-              trainData.md = caret::preProcess(data.frame(scr$rowmean),
+              dcv$rowmean[dcv$rowmean<0] = 0
+              trainData.md = caret::preProcess(data.frame(dcv$rowmean),
                                                method = "range",rangeBounds = c(0,1) )
-              scaledScore = stats::predict(trainData.md, data.frame(scr$rowmean))
+              scaledScore = stats::predict(trainData.md, data.frame(dcv$rowmean))
 
               ## Compute Node Strength
-              el = data.frame(Ratio = scr$Ratio,Score = scaledScore[,1])
+              el = data.frame(Ratio = dcv$Ratio,Score = scaledScore[,1])
               el = tidyr::separate(data = el,col = 1,into = c("num","denom"),sep = "___",remove = F)
               g = igraph::graph_from_edgelist(as.matrix(el[,2:3]))
               igraph::E(g)$weight = el$Score
@@ -131,37 +130,74 @@ dcvFeatureSelection = function(train_data,
 
               featureList = list()
               nodePerf = data.frame()
-              imp.df = dcv
             }))
 
-            ## select features from original unadjusted ratios
-            ra.train = subset(trainData1,select = nodeStrength1$Node[1:tarFeats])
-            ra.test= subset(testData1,select = nodeStrength1$Node[1:tarFeats])
-            #convert to ratios
-            suppressWarnings(suppressMessages({
-              trainData2 =  selEnergyPermR::calcLogRatio(data.frame(Status = y_train,
-                                                                    ra.train))[,-1]
-              testData2 =  selEnergyPermR::calcLogRatio(data.frame(Status = "test",
-                                                                   ra.test))[,-1]
-            }))
+            ## Select Features From Network
+            el = data.frame(Ratio = dcv$Ratio,Score = dcv$rowmean)
+            el = tidyr::separate(data = el,col = 1,into = c("num","denom"),sep = "___",remove = F)
+            g = igraph::graph_from_edgelist(as.matrix(el[,2:3]))
+            igraph::E(g)$weight = el$Score
+            ss = data.frame(s = igraph::strength(g))
+            dcv_adj = igraph::as_adjacency_matrix(graph = g,sparse = F,
+                                                  attr = "weight")
+            dcv_adj = knnADJtoSYM(dcv_adj)
 
-            ### Boruta
-            b = Boruta::Boruta(x = trainData2,
-                               y = y_train,
-                               doTrace = 0,
-                               maxRuns = maxBorutaRuns,
-                               getImp = Boruta::getImpExtraGini)
-            dec = data.frame(Ratio = names(b$finalDecision),
-                             Decision = b$finalDecision)
-            keep = dec %>%
-              dplyr::filter(Decision!="Rejected")
-            kr =as.character(keep$Ratio)
-            if(length(kr)==0){
-              kr = colnames(trainData2)
+            bool = colnames(dcv_adj)%in%nodeStrength1$Node
+            dcv_adj = dcv_adj[bool,bool]
+            isSymmetric(dcv_adj)
+
+            knns = c(2,3,round(seq(4,nrow(nodeStrength1),length.out = num_sets)))
+            knns = unique(knns[knns<=nrow(nodeStrength1)] )
+            knn_search = data.frame()
+            feature_list = list()
+            imp_list = list()
+            flp = 1
+            pb <- progress::progress_bar$new(
+              format = " KNN-Network Selection [:bar] :percent eta: :eta",
+              total = length(knns), clear = FALSE, width= 60)
+            for(k in knns ){
+
+              suppressMessages(suppressWarnings({
+                g = simplexDataAugmentation::knn_graph(dcv_adj,K = k,sim_ = F)
+                g = g$Graph
+                el.knn = data.frame(igraph::get.edgelist(g))
+                colnames(el.knn) = c("num","denom")
+                el.knn$Ratio = paste0(el.knn$num,"___",el.knn$denom)
+                el.knn = dplyr::left_join(el.knn,el)
+                trainData2 = getLogratioFromList(Ratio = el.knn$Ratio,raMatrix = trainData1,Class = y_train)
+                testData2 = getLogratioFromList(Ratio = el.knn$Ratio,raMatrix = testData1,Class = "test")
+
+                ac = foreach::foreach(i = 1:nruns_rfAUC,.combine = rbind)%dopar%{
+                  testh  = ranger::ranger(formula = Status~.,
+                                          data = data.frame(Status = y_train,trainData2),
+                                          importance = rf_importance,
+                                          replace = T,
+                                          num.trees = num_trees,
+                                          probability = T)
+                  vi = testh$variable.importance
+                  testH = pROC::auc(pROC::multiclass.roc(y_train,testh$predictions))
+                  data.frame(Seed = i,Ratio = names(vi) , rowmean = as.numeric(vi),AUC = as.numeric(testH))
+                }
+                ac = ac %>%
+                  dplyr::group_by(Ratio) %>%
+                  dplyr::summarise_all(.funs = mean)
+                testH = unique(ac$AUC);testH
+                imp.df = data.frame(ac[,c(-2,-4)])
+
+                imp_list[[flp]] = imp.df
+                feature_list[[flp]] = list(train = trainData2,test = testData2)
+                flp = flp+1
+                ph.perf = data.frame(K = k,ratios = igraph::ecount(g),AUC = testH)
+                knn_search = rbind(knn_search,ph.perf)
+              }))
+
+              pb$tick()
+
             }
-            ## select final ratios
-            trainData2 = subset(trainData2,select = c(kr))
-            testData2 = subset(testData2,select = c(kr))
+
+            kk = which.max(knn_search$AUC)[1]
+            trainData2 = feature_list[[kk]]$train
+            testData2 = feature_list[[kk]]$test
           },
 
           {## 2 - Optimal Tree-Based Feature Selection
@@ -182,7 +218,7 @@ dcvFeatureSelection = function(train_data,
               nodeStrength = data.frame(Node = names(igraph::strength(g)),Str = igraph::strength(g)) %>%
                 dplyr::arrange(dplyr::desc(Str))
 
-              sets = round(seq(nrow(nodeStrength)*upperBound_percent,minFeats,length.out = 10))
+              sets = round(seq(nrow(nodeStrength)*upperBound_percent,minFeats,length.out = num_sets))
               sets = unique(sets)
               ## Select All Features
               nodeStrength1 = nodeStrength %>%
