@@ -132,21 +132,43 @@ dcvFeatureSelection = function(train_data,
               nodePerf = data.frame()
             }))
 
+
             ## Select Features From Network
-            el = data.frame(Ratio = dcv$Ratio,Score = dcv$rowmean)
+            ra.train = subset(trainData1,select = nodeStrength1$Node)
+            ra.test = subset(testData1,select = nodeStrength1$Node)
+            suppressMessages(suppressWarnings({
+              ph.train = selEnergyPermR::calcLogRatio(data.frame(Status = "test",ra.train))[,-1]
+              ph.test = selEnergyPermR::calcLogRatio(data.frame(Status = "test",ra.test))[,-1]
+            }))
+            ac = foreach::foreach(i = 1:nruns_rfAUC,.combine = rbind)%dopar%{
+              testh  = ranger::ranger(formula = Status~.,
+                                      data = data.frame(Status = y_train,ph.train),
+                                      importance = rf_importance,
+                                      replace = T,
+                                      num.trees = num_trees,
+                                      probability = T)
+              vi = testh$variable.importance
+              testH = pROC::auc(pROC::multiclass.roc(y_train,testh$predictions))
+              data.frame(Seed = i,Ratio = names(vi) , rowmean = as.numeric(vi),AUC = as.numeric(testH))
+            }
+            ac = ac %>%
+              dplyr::group_by(Ratio) %>%
+              dplyr::summarise_all(.funs = mean)
+            testH = unique(ac$AUC);testH
+            imp.df = data.frame(ac[,c(-2,-4)])
+
+            ## CONSTRUCT NETWORK
+            el = data.frame(Ratio = imp.df$Ratio,Score = imp.df$rowmean)
             el = tidyr::separate(data = el,col = 1,into = c("num","denom"),sep = "___",remove = F)
             g = igraph::graph_from_edgelist(as.matrix(el[,2:3]))
             igraph::E(g)$weight = el$Score
-            ss = data.frame(s = igraph::strength(g))
             dcv_adj = igraph::as_adjacency_matrix(graph = g,sparse = F,
                                                   attr = "weight")
             dcv_adj = knnADJtoSYM(dcv_adj)
 
-            bool = colnames(dcv_adj)%in%nodeStrength1$Node
-            dcv_adj = dcv_adj[bool,bool]
-            isSymmetric(dcv_adj)
 
-            knns = c(2,3,round(seq(4,nrow(nodeStrength1),length.out = num_sets)))
+            end = tarFeats-1
+            knns = round(seq(1,end,length.out = num_sets))
             knns = unique(knns[knns<=nrow(nodeStrength1)] )
             knn_search = data.frame()
             feature_list = list()
@@ -253,8 +275,9 @@ dcvFeatureSelection = function(train_data,
                 bool = colnames(dcv_adj)%in%ph$Node
                 dcv_adj = dcv_adj[bool,bool]
 
-                knns = c(3,5,7,9,12,nrow(ph))
-                knns = unique(knns[knns<=nrow(ph)] )
+                end = tarFeats-1
+                knns = round(seq(1,end,length.out = num_sets))
+                knns = unique(knns[knns<=nrow(nodeStrength1)] )
                 knn_search = data.frame()
                 feature_list = list()
                 imp_list = list()
