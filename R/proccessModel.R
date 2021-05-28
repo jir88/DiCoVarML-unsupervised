@@ -107,7 +107,7 @@ processModel =
       if(length(!bool)>0){
         et.im = colMeans(et[bool,],na.rm = F)
         if(is.na(sum(et.im))){
-          et[is.na(et)] = .5
+          et[is.na(et)] = 1/length(classes)
           message("all NA's check Models")
         }else{
           for(i in 1:length(et.im)){
