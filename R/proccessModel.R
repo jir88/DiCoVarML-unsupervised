@@ -64,12 +64,13 @@ processModel =
 
     ## Train Model(s) ####
     message("Train Models")
+    nc = dplyr::if_else(ncol(train_x)==1,1,2)
     mdls.dcv = trainML_Models(trainLRs =  data.frame(train_x),
                               testLRs = data.frame(test_x),
                               ytrain= train_y,
                               y_test = test_y,
                               cvMethod = cvMethod,
-                              mtry_ = ranger_mtry,
+                              mtry_ = ranger_mtry,num_comp = nc,
                               numFolds = num_folds,
                               numRepeats = num_repeats,
                               testIDs = test_ids,
@@ -101,8 +102,21 @@ processModel =
 
       ## Get Train Scores
       et = pred.matrix[,as.character(classes)];ytl = pred.matrix$obs
-      et = selEnergyPermR::fastImputeZeroes(et)
 
+      bool = !is.na(rowSums(et))
+      if(length(!bool)>0){
+        et.im = colMeans(et[bool,],na.rm = F)
+        if(is.na(sum(et.im))){
+          et[is.na(et)] = .5
+          message("all NA's check Models")
+        }else{
+          for(i in 1:length(et.im)){
+            et[!bool,i]=et.im[i]; et[!bool,i]=et.im[i]
+          }
+        }
+      }
+
+      et = selEnergyPermR::fastImputeZeroes(et)
       ## Optimize weights
       optf = function(x){
         et1 =  log(sweep(et,2,STATS = x ,FUN = "/"))
@@ -274,4 +288,5 @@ processModel =
 
     return(list(performance = perf,roc_plotdata = rocPlots,models = model_list))
   }
+
 
