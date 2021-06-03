@@ -9,6 +9,7 @@
 #' @param num_repeats number of cross-validation repeats for DCV. Default = 1. Can be computationally expensive to repeat multiple times.
 #' @param num_folds number of cross-validation folds. Reduces over-fitting.
 #' @param rank_orderDCV should the log-ratios be order and number of distinct part be computed. Can increase computational time.
+#' @param lrs.train A pre-computed samples by log ratio  matrix
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{dcv} \tab Aggregated (across-folds) DCV scores \cr
@@ -21,7 +22,7 @@
 #' @seealso \code{\link[diffCompVarRcpp]{dcvScores}}
 #'
 computeDCV = function(train_data,
-                      y_train,
+                      y_train,lrs.train = NULL,
                       num_repeats = 1,
                       num_folds = 5,
                       impute_factor=1e-7,
@@ -29,15 +30,17 @@ computeDCV = function(train_data,
 
   Status = NULL
 
-  message("Compute Logratios")
-  suppressMessages(suppressWarnings({
-    ## CLose data and impute zeroes
-    trainData1 = selEnergyPermR::fastImputeZeroes(train_data,impFactor = impute_factor)
-
-    ## Compute logratio;s train set computed with
-    lrs.train = selEnergyPermR::calcLogRatio(data.frame(Status = y_train,trainData1))
-
-  }))
+  if(is.null(lrs.train)){
+    message("Compute Logratios")
+    suppressMessages(suppressWarnings({
+      trainData1 = selEnergyPermR::fastImputeZeroes(train_data,
+                                                    impFactor = impute_factor)
+      lrs.train = selEnergyPermR::calcLogRatio(data.frame(Status = y_train,
+                                                          trainData1))
+    }))
+  }else{
+    lrs.train = data.frame(Status = y_train,lrs.train[,-1])
+  }
 
   classes = as.character(unique(y_train))
   message("Compute DCV Scores")

@@ -7,6 +7,7 @@
 computeDCV(
   train_data,
   y_train,
+  lrs.train = NULL,
   num_repeats = 1,
   num_folds = 5,
   impute_factor = 1e-07,
@@ -17,6 +18,8 @@ computeDCV(
 \item{train_data}{a set of log-ratio features to be scored}
 
 \item{y_train}{class labels}
+
+\item{lrs.train}{A pre-computed samples by log ratio  matrix}
 
 \item{num_repeats}{number of cross-validation repeats for DCV. Default = 1. Can be computationally expensive to repeat multiple times.}
 
