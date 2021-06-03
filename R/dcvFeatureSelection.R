@@ -5,8 +5,8 @@
 #' Performs DCV derived feature selection using three approaches:
 #' \itemize{
 #'  \item{"Approach-1"}{ Targeted featutre selection - (Forward Selection)finds best subset given constraints on the number parts/taxa}
-#'  \item{"Approach-2"}{ Untargeted network based selection - (Recursive Selection)finds reduced subsets with no constran on numer of parts}
-#'  \item{"Approach-3"}{ Untargeted DCV guided Boruta - reduces computational time of BORUTA Selection with DCV filtering}
+#'  \item{"DEPRECATED Approach-2"}{ Untargeted network based selection - (Recursive Selection)finds reduced subsets with no constran on numer of parts}
+#'  \item{"DEPRECATED Approach-3"}{ Untargeted DCV guided Boruta - reduces computational time of BORUTA Selection with DCV filtering}
 #' }
 #'
 #'  @importFrom magrittr %>%
