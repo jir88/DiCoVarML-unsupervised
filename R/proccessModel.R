@@ -21,6 +21,7 @@
 #' @param avgModelPrediction Should an average probability model be applied. Ensembles models together and in general improves performance.
 #' @param metaLearner metalearner for stacked ensemble. Usually a neural net or glm (binary). Can be any valid caret model.
 #' @param ensembleModels which models to train. Models that make up the ensemble(if applicable). Must be valid caret models.
+#' @param optimalAccuracySims sets the number of random draws from a dirichlet distribution to search for optimal classifier prob/score weights
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{performance} \tab data.frame with performance metrics on test data for each model and ensemble(if applicable). Metrics include: train-test AUC, MCC, Accuracy, etc.    \cr
@@ -38,7 +39,7 @@ processModel =
            train_y ,
            test_x ,
            test_y ,
-           test_ids,
+           test_ids,optimalAccuracySims = 1000,
            num_folds = 10,num_repeats  = 5,ranger_ntrees = 750,ranger_mtry = 2,cvMethod = "repeatedcv",
            train_stackedModel = F,avgModelPrediction = T,metaLearner = "mlpML",
            ensembleModels = c("gbm","xgbTree","ranger","rangerE","pls")
@@ -125,9 +126,8 @@ processModel =
         xx = as.matrix(tidyr::spread(data.frame(AC1$table),"Reference","Freq")[,-1])
         mltools::mcc(confusionM = xx)
       }
-      nrr = 1000
       weights = compositions::clo(table(train_y))
-      cc = foreach::foreach(jjj =1:nrr,.combine = rbind)%dopar%{
+      cc = foreach::foreach(jjj =1:optimalAccuracySims,.combine = rbind)%dopar%{
         set.seed(jjj)
         prs = as.numeric(compositions::rDirichlet.acomp(1,alpha = weights))
         data.frame(t(prs),MCC = optf(prs))

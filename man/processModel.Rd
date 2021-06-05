@@ -10,6 +10,7 @@ processModel(
   test_x,
   test_y,
   test_ids,
+  optimalAccuracySims = 1000,
   num_folds = 10,
   num_repeats = 5,
   ranger_ntrees = 750,
@@ -31,6 +32,8 @@ processModel(
 \item{test_y}{test class labels}
 
 \item{test_ids}{row metadata for samples. Streamlines downstream analysis and further covariate concatenation}
+
+\item{optimalAccuracySims}{sets the number of random draws from a dirichlet distribution to search for optimal classifier prob/score weights}
 
 \item{num_folds}{number of cross-validation folds for training models and hyper-parameter selection}
 
