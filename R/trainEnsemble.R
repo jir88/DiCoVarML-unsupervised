@@ -124,7 +124,15 @@ trainML_Models <-
                                   method = "gbm",
                                   verbose = F,
                                   trControl = train_control
-          )}else if(mdl %in% c("mlpML")){
+          )}else if(mdl%in%c("glmnet")){
+            glm_family = dplyr::if_else(dplyr::n_distinct(ytrain1)>2,"multinomial","binomial")
+            glm.mdl1 = caret::train(x = trainLRs1 ,
+                                    y = ytrain1,
+                                    metric = "ROC",
+                                    method = "glmnet",family = glm_family,
+                                    verbose = F,
+                                    trControl = train_control
+            )}else if(mdl %in% c("mlpML")){
             nodes = ceiling(sqrt(ncol(trainLRs1)))
             if(is.null(mlpML_layers)){
               mlpML_layers = data.frame(layer1 = c(3*nodes,nodes,nodes,2^5),
