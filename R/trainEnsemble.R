@@ -161,7 +161,14 @@ trainML_Models <-
                                         method = "rf",
                                         tuneGrid = expand.grid(mtry = round(sqrt(ncol(trainLRs1)))),
                                         trControl = train_control
-                )}else {
+                )}else if(mdl%in%c("nnet")){
+                  glm.mdl1 = caret::train(x = trainLRs1 ,
+                                          y = ytrain1,
+                                          metric = "ROC",
+                                          method = "nnet",
+                                          trace = F,
+                                          trControl = train_control
+                  )}else {
                   glm.mdl1 = caret::train(x = trainLRs1 ,
                                           y = ytrain1,
                                           method=mdl,
