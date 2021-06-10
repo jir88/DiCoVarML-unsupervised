@@ -605,7 +605,6 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
   Ratio = NULL
   rowmean = NULL
   Decision = NULL
-  nfold_dcv = NULL
 
   message("Compute Log Ratios")
   suppressMessages(suppressWarnings({
@@ -620,8 +619,10 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
 
   message(" - Compute Empirical DCV Strength")
   suppressMessages(suppressWarnings({
-    dcv_mat = computeDCV(train_data = xtrain,lrs.train = lrs_train,
-                         y_train = ytrain,num_folds = nfold_dcv,
+    dcv_mat = computeDCV(train_data = xtrain,
+                         lrs.train = lrs_train,
+                         y_train = ytrain,
+                         num_folds = nfold_dcv,
                          impute_factor = impute_factor)
 
   }))
