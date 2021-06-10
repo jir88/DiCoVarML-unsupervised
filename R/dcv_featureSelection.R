@@ -308,6 +308,7 @@ rfeSelection.ByMetric = function(train_ratio,test_ratio,ytrain,
 #' @param rfImportance RF feature importance metric to be used with RFE. Requires a valid 'ranger::ranger' importance measure
 #' @param k_fold number of cross-validation folds for RFE
 #' @param minPercFeat minimum number of feature to be considered in RFE
+#' @param useGLM should penalized regression be used instead of hybrid
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{MST} \tab a n x f (retained log ratios) derived from MST pruned stage-1 log ratio network \cr
@@ -317,7 +318,7 @@ rfeSelection.ByMetric = function(train_ratio,test_ratio,ytrain,
 #'    }
 #' @export
 #'
-hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor = 1e-7,
+hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor = 1e-7,useGLM = F,
                                  nperms = 20,nfold_dcv = 1,alpha = 0.1,
                                  num_treesRFE = 2000,num_setRFE = 20,verbose = 0,
                                  rfImportance = "impurity",k_fold = 10,minPercFeat = 0.2,
@@ -415,80 +416,145 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
   train_x = subset(lrs_train,select = ratios$Ratio)
   test_x = subset(lrs_test,select = ratios$Ratio)
 
+  if(useGLM){
+    message("penalized glm Log Ratio Selection from Dense Network")
+    train_x1 = train_x
+    test_x1 = test_x
+    ## penalized regression
+    train_control <- caret::trainControl(method="cv",
+                                         repeats = 1,
+                                         number=5,seeds = NULL,
+                                         classProbs = TRUE,
+                                         savePredictions = T,
+                                         allowParallel = TRUE,
+                                         summaryFunction = caret::multiClassSummary
+    )
 
-  message("Hybrid Log Ratio Selection from Dense Network")
-  train_x1 = train_x
-  test_x1 = test_x
-  message(" - Compute Stage-1")
-  b = Boruta::Boruta(x = train_x1,y = ytrain,doTrace = verbose,
-                     maxRuns = maxBorutaRuns,
-                     getImp = Boruta::getImpExtraGini)
-  dec = data.frame(Ratio = names(b$finalDecision),Decision = b$finalDecision)
-  keep = dec %>%
-    dplyr::filter(Decision!="Rejected")
-  kr =as.character(keep$Ratio)
-  if(length(kr)>2){
-    train_data = subset(train_x1,select = c(kr))
-    test_data = subset(test_x1,select = c(kr))
+    glm.mdl1 = caret::train(x = as.matrix(train_x1) ,
+                            y =ytrain,
+                            metric = "ROC",
+                            max.depth = 0,
+                            method = "glmnet",
+                            trControl = train_control
+    )
+    imp  = caret::varImp(glm.mdl1)
+    imp  = data.frame(feature = rownames(imp$importance),imp = imp$importance,total = rowSums(imp$importance))
+    keep = imp[imp$total>0,]
+    keep = keep$feature
+    if(length(keep)>2){
+      trainData2 = subset(train_x1,select = c(keep))
+      testData2 = subset(test_x1,select = c(keep))
+    }else{
+      pp = rfeSelection.ByMetric(train_ratio = train_x1,test_ratio = test_x1,
+                                 ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
+                                 impMeasure = rfImportance,kfold = k_fold,
+                                 minPercentFeatReturn = minPercFeat)
+      train_data2 = pp$reducedTrainRatios
+      test_data2 = pp$reducedTestRatio
+    }
+
+
+    message("penalized Log Ratio Selection from MST")
+    train_x1 = diffCompVarRcpp::mstAll(train_x,ratios)
+    test_x1 = diffCompVarRcpp::mstAll(test_x,ratios)
+    glm.mdl1 = caret::train(x = as.matrix(train_x1) ,
+                            y =ytrain,
+                            metric = "ROC",
+                            max.depth = 0,
+                            method = "glmnet",
+                            trControl = train_control
+    )
+    imp  = caret::varImp(glm.mdl1)
+    imp  = data.frame(feature = rownames(imp$importance),imp = imp$importance,total = rowSums(imp$importance))
+    keep = imp[imp$total>0,]
+    keep = keep$feature
+    if(length(keep)>2){
+      trainData1 = subset(train_x1,select = c(keep))
+      testData1 = subset(test_x1,select = c(keep))
+    }else{
+      pp = rfeSelection.ByMetric(train_ratio = train_x1,test_ratio = test_x1,
+                                 ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
+                                 impMeasure = rfImportance,kfold = k_fold,
+                                 minPercentFeatReturn = minPercFeat)
+      train_data1 = pp$reducedTrainRatios
+      test_data1 = pp$reducedTestRatio
+    }
   }else{
-    train_data = train_x1
-    test_data = test_x1
-  }
+    message("Hybrid Log Ratio Selection from Dense Network")
+    train_x1 = train_x
+    test_x1 = test_x
+    message(" - Compute Stage-1")
+    b = Boruta::Boruta(x = train_x1,y = ytrain,doTrace = verbose,
+                       maxRuns = maxBorutaRuns,
+                       getImp = Boruta::getImpExtraGini)
+    dec = data.frame(Ratio = names(b$finalDecision),Decision = b$finalDecision)
+    keep = dec %>%
+      dplyr::filter(Decision!="Rejected")
+    kr =as.character(keep$Ratio)
+    if(length(kr)>2){
+      train_data = subset(train_x1,select = c(kr))
+      test_data = subset(test_x1,select = c(kr))
+    }else{
+      train_data = train_x1
+      test_data = test_x1
+    }
 
-  message(" - Compute Stage-2")
-  if(verbose==0){
-    suppressMessages(suppressWarnings({
+    message(" - Compute Stage-2")
+    if(verbose==0){
+      suppressMessages(suppressWarnings({
+        pp = rfeSelection.ByMetric(train_ratio = train_data,test_ratio = test_data,
+                                   ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
+                                   impMeasure = rfImportance,kfold = k_fold,
+                                   minPercentFeatReturn = minPercFeat)
+      }))
+    }else{
       pp = rfeSelection.ByMetric(train_ratio = train_data,test_ratio = test_data,
                                  ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
                                  impMeasure = rfImportance,kfold = k_fold,
                                  minPercentFeatReturn = minPercFeat)
-    }))
-  }else{
-    pp = rfeSelection.ByMetric(train_ratio = train_data,test_ratio = test_data,
-                               ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
-                               impMeasure = rfImportance,kfold = k_fold,
-                               minPercentFeatReturn = minPercFeat)
 
-  }
-  train_data2 = pp$reducedTrainRatios
-  test_data2 = pp$reducedTestRatio
+    }
+    train_data2 = pp$reducedTrainRatios
+    test_data2 = pp$reducedTestRatio
 
 
-  message("Hybrid Log Ratio Selection from MST")
-  train_x1 = diffCompVarRcpp::mstAll(train_x,ratios)
-  test_x1 = diffCompVarRcpp::mstAll(test_x,ratios)
-  message(" - Compute Stage-1")
-  b = Boruta::Boruta(x = train_x1,y = ytrain,doTrace = verbose,
-                     maxRuns = maxBorutaRuns,
-                     getImp = Boruta::getImpExtraGini)
-  dec = data.frame(Ratio = names(b$finalDecision),Decision = b$finalDecision)
-  keep = dec %>%
-    dplyr::filter(Decision!="Rejected")
-  kr =as.character(keep$Ratio)
-  if(length(kr)>2){
-    train_data = subset(train_x1,select = c(kr))
-    test_data = subset(test_x1,select = c(kr))
-  }else{
-    train_data = train_x1
-    test_data = test_x1
-  }
-  message(" - Compute Stage-2")
-  if(verbose==0){
-    suppressMessages(suppressWarnings({
+    message("Hybrid Log Ratio Selection from MST")
+    train_x1 = diffCompVarRcpp::mstAll(train_x,ratios)
+    test_x1 = diffCompVarRcpp::mstAll(test_x,ratios)
+    message(" - Compute Stage-1")
+    b = Boruta::Boruta(x = train_x1,y = ytrain,doTrace = verbose,
+                       maxRuns = maxBorutaRuns,
+                       getImp = Boruta::getImpExtraGini)
+    dec = data.frame(Ratio = names(b$finalDecision),Decision = b$finalDecision)
+    keep = dec %>%
+      dplyr::filter(Decision!="Rejected")
+    kr =as.character(keep$Ratio)
+    if(length(kr)>2){
+      train_data = subset(train_x1,select = c(kr))
+      test_data = subset(test_x1,select = c(kr))
+    }else{
+      train_data = train_x1
+      test_data = test_x1
+    }
+    message(" - Compute Stage-2")
+    if(verbose==0){
+      suppressMessages(suppressWarnings({
+        pp = rfeSelection.ByMetric(train_ratio = train_data,test_ratio = test_data,
+                                   ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
+                                   impMeasure = rfImportance,kfold = k_fold,
+                                   minPercentFeatReturn = minPercFeat)
+      }))
+    }else{
       pp = rfeSelection.ByMetric(train_ratio = train_data,test_ratio = test_data,
                                  ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
                                  impMeasure = rfImportance,kfold = k_fold,
                                  minPercentFeatReturn = minPercFeat)
-    }))
-  }else{
-    pp = rfeSelection.ByMetric(train_ratio = train_data,test_ratio = test_data,
-                               ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
-                               impMeasure = rfImportance,kfold = k_fold,
-                               minPercentFeatReturn = minPercFeat)
 
+    }
+    train_data1 = pp$reducedTrainRatios
+    test_data1 = pp$reducedTestRatio
   }
-  train_data1 = pp$reducedTrainRatios
-  test_data1 = pp$reducedTestRatio
+
 
 
 

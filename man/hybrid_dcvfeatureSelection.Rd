@@ -9,6 +9,7 @@ hybrid_dcvfeatureSelection(
   ytrain,
   xtest = NULL,
   impute_factor = 1e-07,
+  useGLM = F,
   nperms = 20,
   nfold_dcv = 1,
   alpha = 0.1,
@@ -29,6 +30,8 @@ hybrid_dcvfeatureSelection(
 \item{xtest}{A samples (xn)by log ratios (xp) matrix to subset after features are discovered on the xtrain matrix.}
 
 \item{impute_factor}{multiplicative factor for imputed zero counts/abundance}
+
+\item{useGLM}{should penalized regression be used instead of hybrid}
 
 \item{nperms}{number of permutation for hub node discovery}
 
