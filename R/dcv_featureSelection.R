@@ -563,3 +563,85 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
               )
          )
 }
+
+
+
+
+
+
+
+#' Performs DCV Ratio Filtering
+#'
+#' Selects 2 subset of log ratios based dcvScore thresholding. Theses subset are:
+#' \itemize{
+#'  \item{"MST-set"}{ - Non Redundant Subset of logratios pruned after thresholding}
+#'  \item{"Dense"}{ - All log ratios after thresholding }
+#' }
+#'
+#' @param xtrain A samples(n) by log ratios(p) matrix to be used for feature selection
+#' @param ytrain Class labels vector of length n
+#' @param xtest A samples (xn)by log ratios (xp) matrix to subset after features are discovered on the xtrain matrix.
+#' @param impute_factor multiplicative factor for imputed zero counts/abundance
+#' @param useGLM should penalized regression be used instead of hybrid
+#' @param th_percent dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)
+#'
+#' @return A list containing:\tabular{ll}{
+#'    \code{MST} \tab a n x f (retained log ratios) derived from MST  \cr
+#'    \tab \cr
+#'    \code{Dense} \tab a n x f (retained log ratios)  derived from dense thresholding \cr
+#'    \tab \cr
+#'    }
+#' @export
+#'
+dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
+                          impute_factor = 1e-7,useGLM = F,
+                          th_percent=.5){
+
+  ## Global Bindings
+  score = NULL
+  num = NULL
+  denom = NULL
+  Ratio = NULL
+  rowmean = NULL
+  Decision = NULL
+  nfold_dcv = NULL
+
+  message("Compute Log Ratios")
+  suppressMessages(suppressWarnings({
+    lrs_train = computeLRs(train_data = xtrain,impute_factor = impute_factor,y_train = ytrain)
+    if(is.null(xtest)){
+      lrs_test = lrs_train
+    }else{
+      lrs_test = computeLRs(train_data = xtest,impute_factor = impute_factor,y_train = "test")
+    }
+  }))
+
+
+  message(" - Compute Empirical DCV Strength")
+  suppressMessages(suppressWarnings({
+    dcv_mat = computeDCV(train_data = xtrain,lrs.train = lrs_train,
+                         y_train = ytrain,num_folds = nfold_dcv,
+                         impute_factor = impute_factor)
+
+  }))
+
+  trueScore = dcv_mat$dcv
+  trueScore[trueScore$rowmean<0,] = 0
+  th = stats::quantile(trueScore$rowmean,probs = th_percent)
+  ratios =trueScore %>%
+    dplyr::filter(rowmean>th)
+
+  ## Select Full Subset
+  train_x = subset(lrs_train,select = ratios$Ratio)
+  test_x = subset(lrs_test,select = ratios$Ratio)
+
+  train_x1 = diffCompVarRcpp::mstAll(train_x,ratios)
+  test_x1 = diffCompVarRcpp::mstAll(test_x,ratios)
+
+
+
+  return(list(MST = list(train = train_x1,test = test_x1),
+              Dense = list(train = train_x,test = test_x)
+  )
+  )
+}
