@@ -442,8 +442,8 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
     keep = imp[imp$total>0,]
     keep = keep$feature
     if(length(keep)>2){
-      trainData2 = subset(train_x1,select = c(keep))
-      testData2 = subset(test_x1,select = c(keep))
+      train_data2 = subset(train_x1,select = c(keep))
+      test_data2 = subset(test_x1,select = c(keep))
     }else{
       pp = rfeSelection.ByMetric(train_ratio = train_x1,test_ratio = test_x1,
                                  ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
@@ -469,8 +469,8 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
     keep = imp[imp$total>0,]
     keep = keep$feature
     if(length(keep)>2){
-      trainData1 = subset(train_x1,select = c(keep))
-      testData1 = subset(test_x1,select = c(keep))
+      train_data1 = subset(train_x1,select = c(keep))
+      test_data1 = subset(test_x1,select = c(keep))
     }else{
       pp = rfeSelection.ByMetric(train_ratio = train_x1,test_ratio = test_x1,
                                  ytrain =ytrain,ntrees = num_treesRFE,sets = num_setRFE,
