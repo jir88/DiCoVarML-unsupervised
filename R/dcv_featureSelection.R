@@ -582,8 +582,8 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #' @param ytrain Class labels vector of length n
 #' @param xtest A samples (xn)by log ratios (xp) matrix to subset after features are discovered on the xtrain matrix.
 #' @param impute_factor multiplicative factor for imputed zero counts/abundance
-#' @param useGLM should penalized regression be used instead of hybrid
 #' @param th_percent dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)
+#' @param nfold_dcv  number of cross validation folds for DCV computation. Default is 1(all data). Increasing folds increases computational time exponentially.
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{MST} \tab a n x f (retained log ratios) derived from MST  \cr
@@ -594,7 +594,8 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #' @export
 #'
 dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
-                          impute_factor = 1e-7,useGLM = F,
+                          impute_factor = 1e-7,
+                          nfold_dcv = 1,
                           th_percent=.5){
 
   ## Global Bindings

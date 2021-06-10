@@ -9,7 +9,7 @@ dcvRatioFilter(
   ytrain,
   xtest = NULL,
   impute_factor = 1e-07,
-  useGLM = F,
+  nfold_dcv = 1,
   th_percent = 0.5
 )
 }
@@ -22,7 +22,7 @@ dcvRatioFilter(
 
 \item{impute_factor}{multiplicative factor for imputed zero counts/abundance}
 
-\item{useGLM}{should penalized regression be used instead of hybrid}
+\item{nfold_dcv}{number of cross validation folds for DCV computation. Default is 1(all data). Increasing folds increases computational time exponentially.}
 
 \item{th_percent}{dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)}
 }
