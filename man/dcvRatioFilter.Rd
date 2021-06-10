@@ -10,7 +10,9 @@ dcvRatioFilter(
   xtest = NULL,
   impute_factor = 1e-07,
   nfold_dcv = 1,
-  th_percent = 0.5
+  th_percent = 0.5,
+  useKFN = T,
+  k = 5
 )
 }
 \arguments{
@@ -25,6 +27,10 @@ dcvRatioFilter(
 \item{nfold_dcv}{number of cross validation folds for DCV computation. Default is 1(all data). Increasing folds increases computational time exponentially.}
 
 \item{th_percent}{dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)}
+
+\item{useKFN}{should a k-farthest neighbor graph be used to further sparsify log ratios for dense network}
+
+\item{k}{the number of farthest neighbors (most differential nodes/parts/taxa etc. between group via DCV score) for KFN graph}
 }
 \value{
 A list containing:\tabular{ll}{

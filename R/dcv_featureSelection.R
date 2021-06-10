@@ -584,6 +584,8 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #' @param impute_factor multiplicative factor for imputed zero counts/abundance
 #' @param th_percent dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)
 #' @param nfold_dcv  number of cross validation folds for DCV computation. Default is 1(all data). Increasing folds increases computational time exponentially.
+#' @param useKFN should a k-farthest neighbor graph be used to further sparsify log ratios for dense network
+#' @param k the number of farthest neighbors (most differential nodes/parts/taxa etc. between group via DCV score) for KFN graph
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{MST} \tab a n x f (retained log ratios) derived from MST  \cr
@@ -596,7 +598,8 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
                           impute_factor = 1e-7,
                           nfold_dcv = 1,
-                          th_percent=.5){
+                          th_percent=.5,
+                          useKFN=T,k = 5){
 
   ## Global Bindings
   score = NULL
@@ -605,6 +608,9 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
   Ratio = NULL
   rowmean = NULL
   Decision = NULL
+  Score = NULL
+  Score.y = NULL
+
 
   message("Compute Log Ratios")
   suppressMessages(suppressWarnings({
@@ -633,12 +639,48 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
   ratios =trueScore %>%
     dplyr::filter(rowmean>th)
 
-  ## Select Full Subset
-  train_x = subset(lrs_train,select = ratios$Ratio)
-  test_x = subset(lrs_test,select = ratios$Ratio)
 
+  if(useKFN){
+    ## Select Full Subset
+    train_x = subset(lrs_train,select = ratios$Ratio)
+    test_x = subset(lrs_test,select = ratios$Ratio)
+    el = data.frame(Ratio = ratios$Ratio,Score = ratios$rowmean)
+    el = tidyr::separate(data = el,col = 1,into = c("num","denom"),sep = "___",remove = F)
+    ## add diagonal
+    parts = unique(c(el$num,el$denom))
+    el_ = rbind(el,data.frame(Ratio = paste0(parts,"___",parts),num = parts,denom = parts,Score=0))
+    dcv_adj = tidyr::spread(el_[,-1],"num","Score",fill = 0)
+    rownames(dcv_adj) = dcv_adj[,1]
+    dcv_adj = dcv_adj[,-1]
+    dcv_adj = knnADJtoSYM((dcv_adj))
+    g = simplexDataAugmentation::knn_graph(dcv_adj,K = k,sim_ = F)
+    g = g$Graph
+    el.knn = data.frame(igraph::get.edgelist(g))
+    colnames(el.knn) = c("num","denom")
+    el.knn$Ratio = paste0(el.knn$num,"___",el.knn$denom)
+    el.knn = dplyr::left_join(el.knn,el)
+    el.knn1 = el.knn %>%
+      dplyr::filter(!is.na(Score))
+    el.knn2 = el.knn %>%
+      dplyr::filter(is.na(Score)) %>%
+      dplyr::mutate(Ratio = paste0(denom,"___",num)) %>%
+      dplyr::left_join(el,by = "Ratio") %>%
+      dplyr::filter(!is.na(Score.y))
+    keep = c(el.knn1$Ratio,el.knn2$Ratio)
+    ## Save features
+    train_x = subset(train_x,select = keep)
+    test_x = subset(test_x,select = keep)
+  }else{
+    ## Select Full Subset
+    train_x = subset(lrs_train,select = ratios$Ratio)
+    test_x = subset(lrs_test,select = ratios$Ratio)
+  }
+
+  ## MST Features
   train_x1 = diffCompVarRcpp::mstAll(train_x,ratios)
   test_x1 = diffCompVarRcpp::mstAll(test_x,ratios)
+
+
 
 
 
