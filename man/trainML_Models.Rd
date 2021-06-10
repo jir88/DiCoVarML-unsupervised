@@ -19,6 +19,7 @@ trainML_Models(
   mtry_ = 1,
   num_comp = 2,
   ranger_imp = "none",
+  mlpML_layers = NULL,
   bagModels = F,
   sampleSize,
   seed = 8272008
@@ -52,6 +53,8 @@ trainML_Models(
 \item{num_comp}{number of components for pls models}
 
 \item{ranger_imp}{variable importance for random forest models}
+
+\item{mlpML_layers}{hidden node structure for 3-layer mlpML model. Should be data.frame(layer1 = 'c()',layer2 = 'c()',layer3 = c())}
 
 \item{bagModels}{should bagging be used to train the model ensemble}
 

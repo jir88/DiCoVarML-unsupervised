@@ -19,6 +19,7 @@
 #' @param bagModels should bagging be used to train the model ensemble
 #' @param sampleSize sample size for bagging samples
 #' @param seed random seed
+#' @param mlpML_layers hidden node structure for 3-layer mlpML model. Should be data.frame(layer1 = 'c()',layer2 = 'c()',layer3 = c())
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{performance} \tab training performance for each model  \cr
@@ -41,6 +42,7 @@ trainML_Models <-
            numRepeats = 3,
            numFolds = 5,
            cvMethod = "repeatedcv",ntrees = 500,mtry_ = 1,num_comp = 2,ranger_imp = "none",
+           mlpML_layers = NULL,
            bagModels = F,sampleSize,
            seed = 08272008){
 
@@ -122,7 +124,23 @@ trainML_Models <-
                                   method = "gbm",
                                   verbose = F,
                                   trControl = train_control
-          )}else if(mdl%in%c("knn")){
+          )}else if(mdl %in% c("mlpML")){
+            nodes = ceiling(sqrt(ncol(trainLRs1)))
+            if(is.null(mlpML_layers)){
+              mlpML_layers = data.frame(layer1 = c(3*nodes,nodes,nodes,2^5),
+                                        layer2 = c(2*nodes,ceiling(nodes/2),2*nodes,2^4),
+                                        layer3 = c(1*nodes,ceiling(nodes/4),nodes,2^3))
+            }
+            glm.mdl1 = caret::train(x = trainLRs1,
+                                    y = ytrain1,
+                                    metric = "ROC",
+                                    max.depth = 0,
+                                    method = "mlpML",
+                                    tuneGrid = mlpML_layers,
+                                    trControl = train_control
+            )
+
+          }else if(mdl%in%c("knn")){
             glm.mdl1 = caret::train(x = trainLRs1 ,
                                     y = ytrain1,
                                     metric = "ROC",

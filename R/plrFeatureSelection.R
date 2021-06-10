@@ -11,6 +11,7 @@
 #' @param impute_factor impute factor multiplicative replacement of zeroes
 #' @param num_borutaRuns number of runs of the boruta algorithm
 #' @param glm_alpha glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet
+#' @param glm_family which family to use for logistics regression. Should be a valid glmnet family. default = 'binomial'
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{train_Data} \tab samples by features (derived from featureSelectionMethod) training data  \cr
@@ -28,7 +29,7 @@ plrFeatureSelection =
            featureSelectionMethod = 1,
            impute_factor  = 1e-7,
            num_borutaRuns = 100,
-           glm_alpha=1){
+           glm_family='binomial',glm_alpha=1){
 
     Decision = NULL
 
@@ -50,13 +51,18 @@ plrFeatureSelection =
                 dplyr::filter(Decision!="Rejected")
               kr =as.character(keep$Ratio)
               ## select final ratios
-              trainData2 = subset(lrs.train,select = c(kr))
-              testData2 = subset(lrs.test,select = c(kr))
+              if(length(kr)>2){
+                trainData2 = subset(lrs.train,select = c(kr))
+                testData2 = subset(lrs.test,select = c(kr))
+              }else{
+                trainData2 = lrs.train
+                testData2 =  lrs.test
+              }
 
             },
             {
               ## LASSO
-              cv.lasso <- glmnet::cv.glmnet(as.matrix(lrs.train), y_train, family='binomial', alpha=glm_alpha,
+              cv.lasso <- glmnet::cv.glmnet(as.matrix(lrs.train), y_train, family=glm_family, alpha=glm_alpha,
                                             #nfolds = numFold_glm,nlambda = num_lambda,
                                             parallel=TRUE, type.measure='auc')
               # Select Features
@@ -65,8 +71,13 @@ plrFeatureSelection =
               impVar = df_coef[df_coef[, 1] != 0, ]
               impVar_names = names(impVar[-1])
               ## select final ratios
-              trainData2 = subset(lrs.train,select = c(impVar_names))
-              testData2 = subset(lrs.test,select = c(impVar_names))
+              if(length(impVar_names)>2){
+                trainData2 = subset(lrs.train,select = c(impVar_names))
+                testData2 = subset(lrs.test,select = c(impVar_names))
+              }else{
+                trainData2 = lrs.train
+                testData2 =  lrs.test
+              }
             },
             {
               ## ALL ALR

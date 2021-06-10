@@ -12,6 +12,7 @@ alrFeatureSelection(
   featureSelectionMethod = 1,
   impute_factor = 1e-07,
   num_borutaRuns = 100,
+  glm_family = "binomial",
   glm_alpha = 1
 )
 }
@@ -30,8 +31,10 @@ alrFeatureSelection(
 
 \item{num_borutaRuns}{number of runs of the Boruta algorithm}
 
-\item{glm_alpha}{glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet
+\item{glm_family}{which family to use for logistics regression. Should be a valid glmnet family. default = 'binomial'
 #'}
+
+\item{glm_alpha}{glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet}
 }
 \value{
 A list containing:\tabular{ll}{
