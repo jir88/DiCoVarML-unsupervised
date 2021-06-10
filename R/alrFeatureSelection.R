@@ -63,23 +63,35 @@ alrFeatureSelection =
 
             },
             {
-              ## LASSO
-              cv.lasso <- glmnet::cv.glmnet(as.matrix(lrs.train), y_train, family=glm_family, alpha=glm_alpha,
-                                            #nfolds = numFold_glm,nlambda = num_lambda,
-                                            parallel=TRUE, type.measure='auc')
-              # Select Features
-              df_coef <- (as.matrix(stats::coef(cv.lasso, s=cv.lasso$lambda.min)))
-              # See all contributing variables
-              impVar = df_coef[df_coef[, 1] != 0, ]
-              impVar_names = names(impVar[-1])
-              ## select final ratios
-              if(length(impVar_names)>2){
-                trainData2 = subset(lrs.train,select = c(impVar_names))
-                testData2 = subset(lrs.test,select = c(impVar_names))
+              ## penalized regression
+              train_control <- caret::trainControl(method="cv",
+                                                   repeats = 1,
+                                                   number=5,seeds = NULL,
+                                                   classProbs = TRUE,
+                                                   savePredictions = T,
+                                                   allowParallel = TRUE,
+                                                   summaryFunction = caret::multiClassSummary
+              )
+
+              glm.mdl1 = caret::train(x = as.matrix(lrs.train) ,
+                                      y =y_train,
+                                      metric = "ROC",
+                                      max.depth = 0,
+                                      method = "glmnet",
+                                      trControl = train_control
+              )
+              imp  = caret::varImp(glm.mdl1)
+              imp  = data.frame(feature = rownames(imp$importance),imp = imp$importance,total = rowSums(imp$importance))
+              keep = imp[imp$total>0,]
+              keep = keep$feature
+              if(length(keep)>2){
+                trainData2 = subset(lrs.train,select = c(keep))
+                testData2 = subset(lrs.test,select = c(keep))
               }else{
                 trainData2 = lrs.train
                 testData2 =  lrs.test
               }
+
 
             },
             {
