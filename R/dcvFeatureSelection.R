@@ -52,10 +52,15 @@ dcvFeatureSelection = function(train_data,
                                num_trees = 1000,upperBound_percent = .5,
                                rf_importance = "impurity_corrected"){
 
+  ## Global Bindings
   Decision = NULL
   Str = NULL
   Ratio = NULL
   Status = NULL
+  num = NULL
+  denom = NULL
+  Score = NULL
+  Score.y = NULL
 
   message("Compute Logratios")
   suppressMessages(suppressWarnings({
@@ -127,6 +132,7 @@ dcvFeatureSelection = function(train_data,
               nodeStrength1 = nodeStrength %>%
                 dplyr::top_n(n = tarFeats,wt = Str) %>%
                 dplyr::arrange(dplyr::desc(Str))
+              nodeStrength1 = nodeStrength1[1:tarFeats,]
 
               featureList = list()
               nodePerf = data.frame()
@@ -134,8 +140,8 @@ dcvFeatureSelection = function(train_data,
 
 
             ## Select Features From Network
-            ra.train = subset(trainData1,select = nodeStrength1$Node)
-            ra.test = subset(testData1,select = nodeStrength1$Node)
+            ra.train = subset(trainData1,select = nodeStrength1$Node[1:tarFeats])
+            ra.test = subset(testData1,select = nodeStrength1$Node[1:tarFeats])
             suppressMessages(suppressWarnings({
               ph.train = selEnergyPermR::calcLogRatio(data.frame(Status = "test",ra.train))[,-1]
               ph.test = selEnergyPermR::calcLogRatio(data.frame(Status = "test",ra.test))[,-1]
@@ -160,13 +166,15 @@ dcvFeatureSelection = function(train_data,
             ## CONSTRUCT NETWORK
             el = data.frame(Ratio = imp.df$Ratio,Score = imp.df$rowmean)
             el = tidyr::separate(data = el,col = 1,into = c("num","denom"),sep = "___",remove = F)
-            g = igraph::graph_from_edgelist(as.matrix(el[,2:3]))
-            igraph::E(g)$weight = el$Score
-            dcv_adj = igraph::as_adjacency_matrix(graph = g,sparse = F,
-                                                  attr = "weight")
-            dcv_adj = knnADJtoSYM(dcv_adj)
+            ## add diagonal
+            parts = unique(c(el$num,el$denom))
+            el_ = rbind(el,data.frame(Ratio = paste0(parts,"___",parts),num = parts,denom = parts,Score=0))
+            dcv_adj = tidyr::spread(el_[,-1],"num","Score",fill = 0)
+            rownames(dcv_adj) = dcv_adj[,1]
+            dcv_adj = dcv_adj[,-1]
+            dcv_adj = knnADJtoSYM((dcv_adj))
 
-
+            ## determine knn sets
             end = tarFeats-1
             knns = round(seq(1,end,length.out = num_sets))
             knns = unique(knns[knns<=nrow(nodeStrength1)] )
@@ -186,9 +194,37 @@ dcvFeatureSelection = function(train_data,
                 colnames(el.knn) = c("num","denom")
                 el.knn$Ratio = paste0(el.knn$num,"___",el.knn$denom)
                 el.knn = dplyr::left_join(el.knn,el)
-                trainData2 = getLogratioFromList(Ratio = el.knn$Ratio,raMatrix = trainData1,Class = y_train)
-                testData2 = getLogratioFromList(Ratio = el.knn$Ratio,raMatrix = testData1,Class = "test")
+                el.knn1 = el.knn %>%
+                  dplyr::filter(!is.na(Score))
+                el.knn2 = el.knn %>%
+                  dplyr::filter(is.na(Score)) %>%
+                  dplyr::mutate(Ratio = paste0(denom,"___",num)) %>%
+                  dplyr::left_join(el,by = "Ratio") %>%
+                  dplyr::filter(!is.na(Score.y))
+                keep = c(el.knn1$Ratio,el.knn2$Ratio)
+                ## Save features
+                trainData2 = subset(ph.train,select = keep)
+                testData2 = subset(ph.test,select = keep)
 
+
+                ## caret fold approach
+                # ph = DiCoVarML::trainML_Models(trainLRs =trainData2,
+                #                                testLRs = trainData2,
+                #                                ytrain = y_train,
+                #                                y_test = y_train,
+                #                                testIDs = NULL,
+                #                                ntrees = num_trees,
+                #                                numFolds = 5,
+                #                                numRepeats = 5,
+                #                                mtry_ = round(sqrt(ncol(trainData2))),
+                #                                ranger_imp = rf_importance,
+                #                                models = "ranger" )
+                # ph.perf = data.frame(K = k,ratios = ncol(trainData2),AUC = ph$performance$TrainAUC)
+                # ## variable importance
+                # vi = ranger::importance(ph$models[[1]]$finalModel)
+                # imp.df = data.frame(Ratio =names(vi),rowmean = as.numeric(vi))
+
+                ## oob randomfrest approach
                 ac = foreach::foreach(i = 1:nruns_rfAUC,.combine = rbind)%dopar%{
                   testh  = ranger::ranger(formula = Status~.,
                                           data = data.frame(Status = y_train,trainData2),
@@ -205,11 +241,12 @@ dcvFeatureSelection = function(train_data,
                   dplyr::summarise_all(.funs = mean)
                 testH = unique(ac$AUC);testH
                 imp.df = data.frame(ac[,c(-2,-4)])
+                ph.perf = data.frame(K = k,ratios = igraph::ecount(g),AUC = testH)
 
+                ## Store results
                 imp_list[[flp]] = imp.df
                 feature_list[[flp]] = list(train = trainData2,test = testData2)
                 flp = flp+1
-                ph.perf = data.frame(K = k,ratios = igraph::ecount(g),AUC = testH)
                 knn_search = rbind(knn_search,ph.perf)
               }))
 
@@ -217,6 +254,7 @@ dcvFeatureSelection = function(train_data,
 
             }
 
+            print(knn_search)
             kk = which.max(knn_search$AUC)[1]
             trainData2 = feature_list[[kk]]$train
             testData2 = feature_list[[kk]]$test
@@ -305,6 +343,7 @@ dcvFeatureSelection = function(train_data,
                   el.knn = dplyr::left_join(el.knn,el)
                   trainData2 = getLogratioFromList(Ratio = el.knn$Ratio,raMatrix = trainData1,Class = y_train)
                   testData2 = getLogratioFromList(Ratio = el.knn$Ratio,raMatrix = testData1,Class = "test")
+
 
 
                   ac = foreach::foreach(i = 1:nruns_rfAUC,.combine = rbind)%dopar%{
