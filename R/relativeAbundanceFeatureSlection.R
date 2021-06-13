@@ -77,11 +77,12 @@ relAbundanceFeatureSelection =
             },
             {
               ## penalized regression
-              train_control <- caret::trainControl(method="cv",
-                                                   repeats = 1,
-                                                   number=5,seeds = NULL,
+              train_control <- caret::trainControl(method="repeatedcv",
+                                                   repeats = glmRepeats,
+                                                   number=glmFolds,
+                                                   seeds = NULL,
                                                    classProbs = TRUE,
-                                                   savePredictions = T,
+                                                   savePredictions = F,
                                                    allowParallel = TRUE,
                                                    summaryFunction = caret::multiClassSummary
               )
