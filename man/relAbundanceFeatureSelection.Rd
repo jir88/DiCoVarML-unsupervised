@@ -12,8 +12,8 @@ relAbundanceFeatureSelection(
   featureSelectionMethod = 1,
   impute_factor,
   num_borutaRuns = 100,
-  glm_family = "binomial",
-  glm_alpha = 1
+  glmRepeats = 5,
+  glmFolds = 5
 )
 }
 \arguments{
@@ -31,9 +31,9 @@ relAbundanceFeatureSelection(
 
 \item{num_borutaRuns}{number of runs of the boruta algorithm}
 
-\item{glm_family}{which family to use for logistics regression. Should be a valid glmnet family. default = 'binomial'}
+\item{glmRepeats}{number of cv repeats}
 
-\item{glm_alpha}{glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet}
+\item{glmFolds}{number of cvFolds}
 }
 \value{
 A list containing:\tabular{ll}{

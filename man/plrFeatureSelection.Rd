@@ -11,8 +11,8 @@ plrFeatureSelection(
   featureSelectionMethod = 1,
   impute_factor = 1e-07,
   num_borutaRuns = 100,
-  glm_family = "binomial",
-  glm_alpha = 1
+  glmRepeats = 5,
+  glmFolds = 5
 )
 }
 \arguments{
@@ -28,9 +28,9 @@ plrFeatureSelection(
 
 \item{num_borutaRuns}{number of runs of the boruta algorithm}
 
-\item{glm_family}{which family to use for logistics regression. Should be a valid glmnet family. default = 'binomial'}
+\item{glmRepeats}{num cv repeats}
 
-\item{glm_alpha}{glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet}
+\item{glmFolds}{num of cv folds}
 }
 \value{
 A list containing:\tabular{ll}{

@@ -10,9 +10,9 @@
 #' @param impute_zeroes should zeroes be imputed
 #' @param featureSelectionMethod 1 - Boruta; 2- LASSO ; 3 - None
 #' @param impute_factor impute factor multiplicative replacement of zeroes
+#' @param glmRepeats number of cv repeats
+#' @param glmFolds number of cvFolds
 #' @param num_borutaRuns number of runs of the boruta algorithm
-#' @param glm_alpha glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet
-#' @param glm_family which family to use for logistics regression. Should be a valid glmnet family. default = 'binomial'
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{train_Data} \tab samples by features (derived from featureSelectionMethod) training data  \cr
@@ -33,7 +33,8 @@ relAbundanceFeatureSelection =
            featureSelectionMethod = 1,
            impute_factor,
            num_borutaRuns = 100,
-           glm_family='binomial',glm_alpha=1){
+           glmRepeats = 5,
+           glmFolds = 5){
 
     Decision = NULL
 

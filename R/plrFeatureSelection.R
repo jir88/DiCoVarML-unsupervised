@@ -10,8 +10,8 @@
 #' @param featureSelectionMethod 1 - Boruta; 2- LASSO ; 3 - None
 #' @param impute_factor impute factor multiplicative replacement of zeroes
 #' @param num_borutaRuns number of runs of the boruta algorithm
-#' @param glm_alpha glmnet alpha parameter (0,1] where 1-LASSO and (0,1) - elasticnet
-#' @param glm_family which family to use for logistics regression. Should be a valid glmnet family. default = 'binomial'
+#' @param glmRepeats num cv repeats
+#' @param glmFolds num of cv folds
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{train_Data} \tab samples by features (derived from featureSelectionMethod) training data  \cr
@@ -29,7 +29,8 @@ plrFeatureSelection =
            featureSelectionMethod = 1,
            impute_factor  = 1e-7,
            num_borutaRuns = 100,
-           glm_family='binomial',glm_alpha=1){
+           glmRepeats = 5,
+           glmFolds = 5){
 
     Decision = NULL
 
@@ -63,8 +64,8 @@ plrFeatureSelection =
             {
               ## penalized regression
               train_control <- caret::trainControl(method="cv",
-                                                   repeats = 1,
-                                                   number=5,seeds = NULL,
+                                                   repeats = glmRepeats,
+                                                   number=glmFolds,seeds = NULL,
                                                    classProbs = TRUE,
                                                    savePredictions = T,
                                                    allowParallel = TRUE,
