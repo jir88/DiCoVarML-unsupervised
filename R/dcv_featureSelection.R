@@ -625,15 +625,15 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
 
   message(" - Compute Empirical DCV Strength")
   suppressMessages(suppressWarnings({
-    dcv_mat = computeDCV(train_data = xtrain,
-                         lrs.train = lrs_train,
-                         y_train = ytrain,
-                         num_folds = nfold_dcv,
-                         impute_factor = impute_factor)
+
+    dcv_mat = diffCompVarRcpp::dcvScores(logRatioMatrix = data.frame(Status = ytrain,lrs_train),
+                                        includeInfoGain = T, nfolds = nfold_dcv, numRepeats = 1,
+                                        rankOrder = T)
+
 
   }))
 
-  trueScore = dcv_mat$dcv
+  trueScore = dcv_mat$lrs
   trueScore[trueScore$rowmean<0,] = 0
   th = stats::quantile(trueScore$rowmean,probs = th_percent)
   ratios =trueScore %>%
@@ -684,7 +684,7 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
 
 
 
-  return(list(MST = list(train = train_x1,test = test_x1),
+  return(list(MST = list(train = train_x1,test = test_x1),dcvScore = dcv_mat,
               Dense = list(train = train_x,test = test_x)
   )
   )
