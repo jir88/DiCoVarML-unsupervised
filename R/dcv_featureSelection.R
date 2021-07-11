@@ -582,10 +582,13 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #' @param ytrain Class labels vector of length n
 #' @param xtest A samples (xn)by log ratios (xp) matrix to subset after features are discovered on the xtrain matrix.
 #' @param impute_factor multiplicative factor for imputed zero counts/abundance
-#' @param th_percent dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)
+#' @param th_percent DCV score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)
 #' @param nfold_dcv  number of cross validation folds for DCV computation. Default is 1(all data). Increasing folds increases computational time exponentially.
 #' @param useKFN should a k-farthest neighbor graph be used to further sparsify log ratios for dense network
 #' @param k the number of farthest neighbors (most differential nodes/parts/taxa etc. between group via DCV score) for KFN graph
+#' @param lrs default is NULL; can provide a pre-computed log ratio matrix
+#' @param dcv_mat default is NULL; can provide a pre-computed DCV score list i.e. direct output from diffCompVarRcpp::dcvScores
+#' @param rankDCV_Order should the output be rank ordered. For high dimensional OTU tables (e.g. OTU>500) increased computational time is unesccary if not needed
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{MST} \tab a n x f (retained log ratios) derived from MST  \cr
@@ -595,10 +598,10 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #'    }
 #' @export
 #'
-dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
+dcvRatioFilter = function(xtrain,lrs=NULL,ytrain,xtest = NULL,dcv_mat = NULL,
                           impute_factor = 1e-7,
                           nfold_dcv = 1,
-                          th_percent=.5,
+                          th_percent=.5,rankDCV_Order = T,
                           useKFN=T,k = 5){
 
   ## Global Bindings
@@ -612,26 +615,30 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
   Score.y = NULL
 
 
-  message("Compute Log Ratios")
-  suppressMessages(suppressWarnings({
-    lrs_train = computeLRs(train_data = xtrain,impute_factor = impute_factor,y_train = ytrain)
-    if(is.null(xtest)){
-      lrs_test = lrs_train
-    }else{
-      lrs_test = computeLRs(train_data = xtest,impute_factor = impute_factor,y_train = "test")
-    }
-  }))
+  if(!is.null(lrs)){
+    message("Compute Log Ratios")
+    suppressMessages(suppressWarnings({
+      lrs_train = computeLRs(train_data = xtrain,impute_factor = impute_factor,y_train = ytrain)
+      if(is.null(xtest)){
+        lrs_test = lrs_train
+      }else{
+        lrs_test = computeLRs(train_data = xtest,impute_factor = impute_factor,y_train = "test")
+      }
+    }))
+  }
+
+  if(is.null(dcv_mat)){
+    message(" - Compute Empirical DCV Strength")
+    suppressMessages(suppressWarnings({
+
+      dcv_mat = diffCompVarRcpp::dcvScores(logRatioMatrix = lrs_train,
+                                           includeInfoGain = T, nfolds = nfold_dcv, numRepeats = 1,
+                                           rankOrder = rankDCV_Order)
 
 
-  message(" - Compute Empirical DCV Strength")
-  suppressMessages(suppressWarnings({
+    }))
+  }
 
-    dcv_mat = diffCompVarRcpp::dcvScores(logRatioMatrix = data.frame(Status = ytrain,lrs_train),
-                                        includeInfoGain = T, nfolds = nfold_dcv, numRepeats = 1,
-                                        rankOrder = T)
-
-
-  }))
 
   trueScore = dcv_mat$lrs
   trueScore[trueScore$rowmean<0,] = 0
@@ -689,3 +696,4 @@ dcvRatioFilter = function(xtrain,ytrain,xtest = NULL,
   )
   )
 }
+

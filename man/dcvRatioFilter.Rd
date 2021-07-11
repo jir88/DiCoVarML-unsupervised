@@ -6,11 +6,14 @@
 \usage{
 dcvRatioFilter(
   xtrain,
+  lrs = NULL,
   ytrain,
   xtest = NULL,
+  dcv_mat = NULL,
   impute_factor = 1e-07,
   nfold_dcv = 1,
   th_percent = 0.5,
+  rankDCV_Order = T,
   useKFN = T,
   k = 5
 )
@@ -18,15 +21,21 @@ dcvRatioFilter(
 \arguments{
 \item{xtrain}{A samples(n) by log ratios(p) matrix to be used for feature selection}
 
+\item{lrs}{default is NULL; can provide a pre-computed log ratio matrix}
+
 \item{ytrain}{Class labels vector of length n}
 
 \item{xtest}{A samples (xn)by log ratios (xp) matrix to subset after features are discovered on the xtrain matrix.}
+
+\item{dcv_mat}{default is NULL; can provide a pre-computed DCV score list i.e. direct output from diffCompVarRcpp::dcvScores}
 
 \item{impute_factor}{multiplicative factor for imputed zero counts/abundance}
 
 \item{nfold_dcv}{number of cross validation folds for DCV computation. Default is 1(all data). Increasing folds increases computational time exponentially.}
 
-\item{th_percent}{dcv score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)}
+\item{th_percent}{DCV score percentile for thresholding i.e. keep ratio where dcvScore > threshold(th_percent)}
+
+\item{rankDCV_Order}{should the output be rank ordered. For high dimensional OTU tables (e.g. OTU>500) increased computational time is unesccary if not needed}
 
 \item{useKFN}{should a k-farthest neighbor graph be used to further sparsify log ratios for dense network}
 
