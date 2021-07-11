@@ -7,6 +7,7 @@
 dcvRatioFilter(
   xtrain,
   lrs = NULL,
+  lrs_test = NULL,
   ytrain,
   xtest = NULL,
   dcv_mat = NULL,
@@ -22,6 +23,8 @@ dcvRatioFilter(
 \item{xtrain}{A samples(n) by log ratios(p) matrix to be used for feature selection}
 
 \item{lrs}{default is NULL; can provide a pre-computed log ratio matrix}
+
+\item{lrs_test}{default is NULL; can provide a pre-computed log ratio matrix for test data}
 
 \item{ytrain}{Class labels vector of length n}
 

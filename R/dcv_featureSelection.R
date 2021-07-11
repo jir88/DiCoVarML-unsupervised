@@ -589,6 +589,7 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #' @param lrs default is NULL; can provide a pre-computed log ratio matrix
 #' @param dcv_mat default is NULL; can provide a pre-computed DCV score list i.e. direct output from diffCompVarRcpp::dcvScores
 #' @param rankDCV_Order should the output be rank ordered. For high dimensional OTU tables (e.g. OTU>500) increased computational time is unesccary if not needed
+#' @param lrs_test default is NULL; can provide a pre-computed log ratio matrix for test data
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{MST} \tab a n x f (retained log ratios) derived from MST  \cr
@@ -598,7 +599,7 @@ hybrid_dcvfeatureSelection = function(xtrain,ytrain,xtest = NULL,impute_factor =
 #'    }
 #' @export
 #'
-dcvRatioFilter = function(xtrain,lrs=NULL,ytrain,xtest = NULL,dcv_mat = NULL,
+dcvRatioFilter = function(xtrain,lrs=NULL,lrs_test = NULL,ytrain,xtest = NULL,dcv_mat = NULL,
                           impute_factor = 1e-7,
                           nfold_dcv = 1,
                           th_percent=.5,rankDCV_Order = T,
