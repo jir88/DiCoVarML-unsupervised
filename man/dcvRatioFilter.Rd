@@ -6,7 +6,7 @@
 \usage{
 dcvRatioFilter(
   xtrain,
-  lrs = NULL,
+  lrs_train = NULL,
   lrs_test = NULL,
   ytrain,
   xtest = NULL,
@@ -22,7 +22,7 @@ dcvRatioFilter(
 \arguments{
 \item{xtrain}{A samples(n) by log ratios(p) matrix to be used for feature selection}
 
-\item{lrs}{default is NULL; can provide a pre-computed log ratio matrix}
+\item{lrs_train}{default is NULL; can provide a pre-computed log ratio matrix for train data}
 
 \item{lrs_test}{default is NULL; can provide a pre-computed log ratio matrix for test data}
 
