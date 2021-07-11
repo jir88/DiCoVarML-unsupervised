@@ -615,7 +615,7 @@ dcvRatioFilter = function(xtrain,lrs=NULL,ytrain,xtest = NULL,dcv_mat = NULL,
   Score.y = NULL
 
 
-  if(!is.null(lrs)){
+  if(is.null(lrs)){
     message("Compute Log Ratios")
     suppressMessages(suppressWarnings({
       lrs_train = computeLRs(train_data = xtrain,impute_factor = impute_factor,y_train = ytrain)
