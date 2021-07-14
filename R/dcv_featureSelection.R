@@ -614,6 +614,7 @@ dcvRatioFilter = function(xtrain,lrs_train=NULL,lrs_test = NULL,ytrain,xtest = N
   Decision = NULL
   Score = NULL
   Score.y = NULL
+  lrs = NULL
 
 
   if(is.null(lrs)){
