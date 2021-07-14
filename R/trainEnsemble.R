@@ -168,7 +168,7 @@ trainML_Models <-
                                         y = ytrain1,
                                         metric = "ROC",
                                         method = "rf",
-                                        tuneGrid = unique(c(mtry_,ceiling(sqrt(ncol(trainLRs1)))))),
+                                        tuneGrid = unique(c(mtry_,ceiling(sqrt(ncol(trainLRs1))))),
                                         trControl = train_control
                 )}else if(mdl%in%c("nnet")){
                   glm.mdl1 = caret::train(x = trainLRs1 ,
