@@ -89,7 +89,7 @@ trainML_Models <-
                                   max.depth = 0,
                                   method = "ranger",num.trees=ntrees,
                                   importance = ranger_imp,
-                                  tuneGrid = expand.grid(min.node.size=1,splitrule = c("gini"), mtry = c(2,round(sqrt(ncol(trainLRs1))))),
+                                  tuneGrid = expand.grid(min.node.size=1,splitrule = c("gini"), mtry = c(mtry_,round(sqrt(ncol(trainLRs1))))),
                                   trControl = train_control
           )
         }else if(mdl%in%c("xgbTree")){
@@ -167,7 +167,7 @@ trainML_Models <-
                                         y = ytrain1,
                                         metric = "ROC",
                                         method = "rf",
-                                        tuneGrid = expand.grid(mtry = round(sqrt(ncol(trainLRs1)))),
+                                        tuneGrid = expand.grid(mtry = c(mtry_,ceiling(sqrt(ncol(trainLRs1)))) ),
                                         trControl = train_control
                 )}else if(mdl%in%c("nnet")){
                   glm.mdl1 = caret::train(x = trainLRs1 ,
