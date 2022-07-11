@@ -20,6 +20,7 @@ Imports:
     glmnet (>= 4.1-4),
     igraph (>= 1.2.5),
     magrittr (>= 1.5),
+    mixOmics (>= 6.20.0),
     mltools (>= 0.3.5),
     pROC (>= 1.17.0.1),
     progress (>= 1.2.2),
@@ -29,4 +30,5 @@ Imports:
     simplexDataAugmentation,
     stats (>= 4.2.0),
     stringr (>= 1.4.0),
+    tibble (>= 3.1.7),
     tidyr (>= 1.1.3)
