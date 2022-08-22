@@ -79,7 +79,8 @@ trainML_Models <-
         rownames(trainLRs1) = paste0("ID_",1:nrow(trainLRs))
       }
 
-      suppressMessages(suppressWarnings({
+      # suppressMessages(suppressWarnings({
+      suppressMessages({
 
 
         if(mdl%in%c("ranger")){
@@ -197,7 +198,7 @@ trainML_Models <-
         #colnames(ph1) = paste(models[i],colnames(ph1),sep = "_")
         performance_ = rbind(performance_,ph1)
 
-      }))
+      })
 
       message(models_[i])
       finModels[[models_[i]]] = glm.mdl1
