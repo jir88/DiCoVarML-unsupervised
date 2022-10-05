@@ -40,10 +40,7 @@ targeted_dcvSelection = function(trainx,
                                  scaledata = T){
 
   result = data.frame()
-  geo.mean = function(x){
-    exp(mean(log(x)))
-  }
-  compTime = 0
+  # compTime = 0
 
   prob_matrices = list()
 
@@ -62,7 +59,7 @@ targeted_dcvSelection = function(trainx,
 
       # if no pre-computed DiCoVar matrix was supplied, calculate one
       if(is.null(dcv)){
-        compTime = system.time({
+        # compTime = system.time({
 
           ## impute zeroes for both training and test data
           trainx = data.frame(selEnergyPermR::fastImputeZeroes(trainx,impFactor = imp_factor))
@@ -77,7 +74,7 @@ targeted_dcvSelection = function(trainx,
                                               includeInfoGain = T, nfolds = 1, numRepeats = 1,
                                               rankOrder = F)
 
-        })
+        # })
         # pull out the scoring matrix
         dcv = cc.dcv$lrs
       }
@@ -146,7 +143,7 @@ targeted_dcvSelection = function(trainx,
 
     }else{ # we're selecting random features, probably for null model benchmarks
       cn = colnames(trainx)
-      compTime = 0
+      # compTime = 0
       rand_feats = sample(cn,replace = F)[1:tarFeatures]
       train_subcomp = subset(trainx,select = rand_feats)
       test_subcomp = subset(testx,select = rand_feats)
@@ -180,9 +177,9 @@ targeted_dcvSelection = function(trainx,
     # 2 groups, or >2 groups?
     type_family = dplyr::if_else(length(classes)>2,"multinomial","binomial")
     # 10-fold CV of ridge regression on standardized training data
-    compTime2 = system.time({
+    # compTime2 = system.time({
       cv.clrlasso <- glmnet::cv.glmnet(as.matrix(glm.train),y_label, standardize=F, alpha=alpha_,family=type_family)
-    })
+    # })
     if(type_family=="binomial"){
       # pull optimal model coefficients
       features = as.matrix(stats::coef(cv.clrlasso, s = "lambda.min"))
@@ -239,7 +236,7 @@ targeted_dcvSelection = function(trainx,
                       number_parts = n_parts,
                       # number of logratios in model
                       number_ratios = ncol(glm.train),
-                      comp_time = compTime[3]+compTime2[3],
+                      comp_time = 1,#compTime[3]+compTime2[3],
                       # number of features before feature selection
                       base_dims = baseDims)
     result = rbind(result,perf)
@@ -311,7 +308,7 @@ targeted_dcvSelection = function(trainx,
                       AUC = as.numeric(pROC::auc(mroc)),
                       number_parts = n_parts,
                       number_ratios = ncol(train_data2),
-                      comp_time = compTime[3]+compTime2[3],
+                      comp_time = 1, #compTime[3]+compTime2[3],
                       base_dims = baseDims)
     # add performance to existing ridge model performance data frame
     result = rbind(result,perf)
@@ -340,7 +337,7 @@ targeted_dcvSelection = function(trainx,
         glm.test = glm.test[,keep]
 
         # do the RFE analysis (similar to rfcv function in randomForest package)
-        compTime2 = system.time({
+        # compTime2 = system.time({
           pp = rfeSelection.ByMetric(train_ratio = glm.train,
                                      test_ratio = glm.test,
                                      ytrain =y_label,
@@ -349,7 +346,7 @@ targeted_dcvSelection = function(trainx,
                                      impMeasure = "impurity_corrected",
                                      kfold = 5,
                                      minPercentFeatReturn = .3)
-        })
+        # })
 
         # get the reduced set of ratios
         train_data2 = pp$reducedTrainRatios
@@ -384,7 +381,7 @@ targeted_dcvSelection = function(trainx,
         ## Save Performance
         perf = data.frame(Approach = "DCV-rfRFE",AUC = as.numeric(pROC::auc(mroc)),
                           number_parts = n_parts,number_ratios = ncol(train_data2),
-                          comp_time = compTime[3]+compTime2[3],
+                          comp_time = 1, #compTime[3]+compTime2[3],
                           base_dims = baseDims)
         result = rbind(result,perf)
         prob_matrices[["rfRFE"]] = pmat
