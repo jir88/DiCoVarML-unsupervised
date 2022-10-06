@@ -216,7 +216,7 @@ targeted_dcvSelection = function(trainx,
     model_ = list(mdl = cv.clrlasso,data = list(train = glm.train,test = glm.test))
     if(type_family=="binomial"){
       # construct ROC curve with ridge model probabilities
-      mroc = pROC::roc(y_test,p)
+      mroc = pROC::roc(y_test,p[, 1])
       # calculate and report AUC for ridge model
       mroc.dcvlasso = pROC::auc(mroc);mroc.dcvlasso
       # record class probabilities from ridge model
