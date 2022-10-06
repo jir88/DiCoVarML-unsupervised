@@ -128,7 +128,7 @@ tune.dicovar <- function(X,
 
   # calculate logratios and DCV scores for each set of CV folds
   lr_dcv_folds <- foreach::foreach(fld = cv_folds, .combine = c) %:%
-    foreach::foreach(f = 1:fld$k_fold, .packages = c("DiCoVarML", "selEnergyPermR"), .combine = c) %dopar% {
+    foreach::foreach(f = 1:fld$k_fold, .packages = c("DiCoVarML", "selEnergyPermR", "foreach"), .combine = c) %dopar% {
       message(paste("Starting rep", fld$sd1, "fold", f))
       ## Partition inner fold
       innerFold = DiCoVarML::extractTrainTestSplit(foldDataList = fld$innerfold_data,
@@ -156,7 +156,7 @@ tune.dicovar <- function(X,
                                           seed_ = fld$rng_seed)
 
       # estimate performance with different numbers of features
-      tmp <- foreach::foreach(tar_Features = sets, .packages = c("DiCoVarML")) %do% {
+      tmp <- foreach::foreach(tar_Features = test.parts, .packages = c("DiCoVarML", "magrittr")) %do% {
         tar_dcvInner = targeted_dcvSelection(trainx = trainx,
                                              minConnected = min_connected,
                                              useRidgeWeights = useRidgeWeight,
@@ -190,14 +190,22 @@ tune.dicovar <- function(X,
         # report progress
         message(paste0("Finished fitting DCV model with ", tar_Features, " features"))
         # return list of results
-        list(Inner_Perf = perf, Train_AUC = pmat)
+        list(Inner_Perf = perf, Train_AUC = pmat,
+             Ridge_Model = tar_dcvInner$glm_model$mdl,
+             DCV_Scores = tar_dcvInner$final_dcv)
       } # end target features loop
       # return inner results
       message(paste0("Finished rep ", fld$sd1, ", fold ", f))
       tmp
     } # end nested 5x2-fold CV
 
-  dcv_perf_results <- lapply(purrr::transpose(lr_dcv_folds), function(l) do.call(rbind, l))
+  # invert the list of results so we can combine individual parts
+  df <- purrr::transpose(lr_dcv_folds)
+  # can't row-bind glmnet models, so pull those out
+  dcv_perf_ridge_mdls <- df$Ridge_Model
+  df$Ridge_Model <- NULL
+
+  dcv_perf_results <- lapply(df, function(l) do.call(rbind, l))
 
   ## lambda.1se equivalent ----
 
@@ -233,6 +241,8 @@ tune.dicovar <- function(X,
               cv_folds = cv_folds,
               train_auc = dcv_perf_results$Train_AUC,
               inner_perf = dcv_perf_results$Inner_Perf,
+              inner_dcv_scores = dcv_perf_results$DCV_Scores,
+              inner_ridge_models = dcv_perf_ridge_mdls,
               target_max = target_max,
               target_1se = target_1se))
 }
