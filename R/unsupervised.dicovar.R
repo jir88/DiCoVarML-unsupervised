@@ -7,6 +7,9 @@
 #'
 #' @param X matrix-like object with one row per sample and one column per part
 #' @param max_sparsity Parts with a higher proportion of zero/missing values will be dropped before zero imputation.
+#' @param replace Should fake data be sampled from real data with replacement?
+#' @param dcv_folds Partition the data into folds and average DCV scores from each fold
+#' @param dcv_repeats How many times should DCV repeat the partitioning process?
 #' @param scale_data Should data be scaled to unit standard deviation before ridge regression?
 #' @param alpha amount of LASSO regression to mix into the final ridge regression model
 #' @param seed random seed to use for reproducible results, or NULL to use the current seed
@@ -15,7 +18,7 @@
 #'    \code{Performance} \tab How well a glmnet model can distinguish real from fake data. \cr
 #'    \code{glm_model} \tab The glmnet model itself. \cr
 #'    \code{part_matrix} \tab The closed, zero-imputed part matrix. Includes fake data. \cr
-#'    \code{final_dcv} \tab The DCV row means for logratios included in the model. \cr
+#'    \code{dcv_scores} \tab The DCV score data for all logratios. \cr
 #'    \code{ridge_pmat} \tab Fitted class probabilities from the glmnet model. \cr
 #'    \tab \cr
 #'}
@@ -23,8 +26,14 @@
 #'
 #' @seealso \code{\link[diffCompVarRcpp]{dcvScores}}
 #'
-unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
-                                 alpha = 0, seed = NULL) {
+unsupervised.dicovar <- function(X,
+                                 max_sparsity = 0.9,
+                                 replace = TRUE,
+                                 dcv_folds = 1,
+                                 dcv_repeats = 1,
+                                 scale_data = TRUE,
+                                 alpha = 0,
+                                 seed = NULL) {
   # get part of the current random seed if none has been specified
   if(!is.numeric(seed) || is.na(seed)) {
     seed <- .Random.seed[3]
@@ -35,13 +44,11 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
   message("Generating synthetic data...")
 
   # this method samples new data from the columns of X
-  synth_data <- sapply(X, function(x) { sample(x, replace = TRUE) })
+  synth_data <- sapply(X, function(x) { sample(x, replace = replace) })
 
   # combine fake and real data
-  combo_data <- rbind(as.data.frame(X), as.data.frame(synth_data))
-  # add labels
-  combo_data <- cbind(Status = rep(c("real", "fake"), each = nrow(X)),
-                      combo_data)
+  combo_data <- rbind(data.frame(Status = "real", X),
+                      data.frame(Status = "fake", synth_data))
 
   # impute zeroes and close data ----
   message("Imputing zeroes...")
@@ -58,14 +65,14 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
   # compute log ratios ----
   message("Computing logratios...")
 
-  lrs.combo = selEnergyPermR::calcLogRatio(data.frame(Status = combo_y,
-                                                      combo_x))
+  lrs.combo = selEnergyPermR::calcLogRatio(data.frame(Status = combo_y, combo_x))
+
   # calculate DCV scores ----
   message(paste0("Calculating DCV scores..."))
 
   cc.dcv = diffCompVarRcpp::dcvScores(logRatioMatrix = lrs.combo,
-                                      includeInfoGain = T, nfolds = 1,
-                                      numRepeats = 1, rankOrder = F,
+                                      includeInfoGain = T, nfolds = dcv_folds,
+                                      numRepeats = dcv_repeats, rankOrder = F,
                                       seed_ = seed)
 
   ## Compute Node Strength
@@ -73,7 +80,14 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
 
   # which logratios have mean scores >0?
   pos_dcv_ratios <- cc.dcv$lrs$Ratio[cc.dcv$lrs$rowmean > 0]
-  cc.dcv$lrs
+  message(paste(length(pos_dcv_ratios), "of", ncol(lrs.combo) - 1, "ratios have DCV scores >0"))
+  # cc.dcv$lrs
+
+  # if <2 ratios have DCV>0, glmnet will fail
+  if(length(pos_dcv_ratios) < 2) {
+    df <- dplyr::arrange(cc.dcv$lrs, dplyr::desc(rowmean))
+    pos_dcv_ratios <- df$Ratio[1:2]
+  }
 
   ### Select key ratios from logratio matrix
   glm.combo = subset(lrs.combo, select = pos_dcv_ratios)
@@ -96,7 +110,6 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
   message("Train Ridge Regression Model...")
 
   # 10-fold CV of ridge regression on standardized training data
-  message(colnames(as.matrix(glm.combo)))
   cv.clrlasso <- glmnet::cv.glmnet(x = as.matrix(glm.combo),
                                    y = combo_y,
                                    nfolds = 10,
@@ -107,7 +120,7 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
   # drop any features with coefficient == 0
   features = features[abs(features)>0]
   # report number of features we ended up with
-  message(paste0("Ridge model has ", length(features), " features."))
+  message(paste0("Ridge model has ", length(features)-1, " features."))
   # same thing, but keep zero coefficients
   c = as.matrix(stats::coef(cv.clrlasso, s = "lambda.min"))
 
@@ -123,7 +136,7 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
                    auc = TRUE, ci = TRUE)
   # calculate and report AUC for ridge model
   mroc.dcvlasso = mroc$auc
-  mroc$ci
+  # mroc$ci
   # record class probabilities from ridge model
   pmat = data.frame(p,1-p);colnames(pmat) = c("real", "fake")
 
@@ -142,9 +155,9 @@ unsupervised.dicovar <- function(X, max_sparsity = 0.9, scale_data = TRUE,
               # the ridge regression model and its input data
               glm_model = model_,
               # parts in the DCV matrix, on the simplex, zero imputed
-              part_matrix = combo_x,
-              # DCV row means for final logratios
-              final_dcv = cc.dcv$lrs,
+              # part_matrix = combo_x,
+              # DCV scores for all logratios
+              dcv_scores = cc.dcv,
               # fitted class probabilities from the ridge model
               ridge_pmat = pmat))
 }

@@ -7,6 +7,9 @@
 unsupervised.dicovar(
   X,
   max_sparsity = 0.9,
+  replace = TRUE,
+  dcv_folds = 1,
+  dcv_repeats = 1,
   scale_data = TRUE,
   alpha = 0,
   seed = NULL
@@ -16,6 +19,12 @@ unsupervised.dicovar(
 \item{X}{matrix-like object with one row per sample and one column per part}
 
 \item{max_sparsity}{Parts with a higher proportion of zero/missing values will be dropped before zero imputation.}
+
+\item{replace}{Should fake data be sampled from real data with replacement?}
+
+\item{dcv_folds}{Partition the data into folds and average DCV scores from each fold}
+
+\item{dcv_repeats}{How many times should DCV repeat the partitioning process?}
 
 \item{scale_data}{Should data be scaled to unit standard deviation before ridge regression?}
 
@@ -28,7 +37,7 @@ A list containing:\tabular{ll}{
    \code{Performance} \tab How well a glmnet model can distinguish real from fake data. \cr
    \code{glm_model} \tab The glmnet model itself. \cr
    \code{part_matrix} \tab The closed, zero-imputed part matrix. Includes fake data. \cr
-   \code{final_dcv} \tab The DCV row means for logratios included in the model. \cr
+   \code{dcv_scores} \tab The DCV score data for all logratios. \cr
    \code{ridge_pmat} \tab Fitted class probabilities from the glmnet model. \cr
    \tab \cr
 }
