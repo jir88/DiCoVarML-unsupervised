@@ -205,9 +205,7 @@ tune.dicovar <- function(X,
   dcv_perf_ridge_mdls <- df$Ridge_Model
   df$Ridge_Model <- NULL
 
-  dcv_perf_results <- lapply(df, function(l) do.call(rbind, l, fill = TRUE))
-
-  message(paste("NAs in DCV results:", lapply(X = dcv_perf_results, FUN =  function(x) { return(sum(is.na(x))) })))
+  dcv_perf_results <- lapply(df, function(l) do.call(dplyr::bind_rows, l))
 
   ## lambda.1se equivalent ----
 
