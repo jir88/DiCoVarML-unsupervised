@@ -25,6 +25,7 @@ Imports:
     pROC (>= 1.17.0.1),
     purrr (>= 0.3.4),
     ranger (>= 0.12.1),
+    rlang (>= 1.0.6),
     selEnergyPermR,
     simplexDataAugmentation,
     stats (>= 4.2.0),
