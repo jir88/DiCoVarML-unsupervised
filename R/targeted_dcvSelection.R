@@ -23,6 +23,8 @@
 #' @param scaledata should train data be scaled (test data scaled based on train)
 #'
 #' @return a list containing the models and diagnostic outputs
+#'
+#' @importFrom rlang .data
 #' @export
 #'
 #'
@@ -199,12 +201,12 @@ targeted_dcvSelection = function(trainx,
         ph = as.matrix(features[[o]])
         feat = ph[-1,]
         keep = feat[abs(feat)>0]
-        feat.df = rbind(feat.df,data.frame(Ratio = names(keep),coef = as.numeric(keep)))
+        feat.df = rbind(feat.df,data.frame(Ratio = names(keep), coef = as.numeric(keep)))
       }
-      feat.df =feat.df %>%
-        dplyr::group_by(Ratio) %>%
-        dplyr::summarise(coef = sum(coef)) %>%
-        dplyr::filter(coef!=0)
+      feat.df = feat.df %>%
+        dplyr::group_by(.data$Ratio) %>%
+        dplyr::summarise(coef = sum(.data$coef)) %>%
+        dplyr::filter(.data$coef != 0)
 
     }
 
@@ -292,8 +294,8 @@ targeted_dcvSelection = function(trainx,
     pmat = ph$predictionMatrix
     # average predictions across all models
     pmat = pmat %>%
-      dplyr::group_by(ID,Status) %>%
-      dplyr::select(-model) %>%
+      dplyr::group_by(.data$ID, .data$Status) %>%
+      dplyr::select(-.data$model) %>%
       dplyr::summarise_all(.funs = mean)
     pmat = data.frame(pmat)
     # calculate ROC on averaged predictions
@@ -332,7 +334,7 @@ targeted_dcvSelection = function(trainx,
         # find highly-correlated logratios
         c.fc = data.frame(Ratio = caret::findCorrelation(c1.cor,cutoff = tc,names = T))
         # drop these ratios
-        keep =!colnames(glm.train)%in%c.fc$Ratio
+        keep =!colnames(glm.train) %in% c.fc$Ratio
         glm.train = glm.train[,keep]
         glm.test = glm.test[,keep]
 
@@ -365,8 +367,8 @@ targeted_dcvSelection = function(trainx,
 
         pmat = ph$predictionMatrix
         pmat = pmat %>%
-          dplyr::group_by(ID,Status) %>%
-          dplyr::select(-model) %>%
+          dplyr::group_by(.data$ID, .data$Status) %>%
+          dplyr::select(-.data$model) %>%
           dplyr::summarise_all(.funs = mean)
         pmat = data.frame(pmat)
         mroc = pROC::multiclass.roc(pmat$Status,pmat[,classes]);mroc
