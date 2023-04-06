@@ -23,16 +23,17 @@
 #' @return A list containing:\tabular{ll}{
 #'    \code{cv_folds} \tab The cross-validation folds used for performance estimation. \cr
 #'    \tab \cr
-#'    \code{train_auc} \tab The training set ROC AUC values for each model type and target part count. \cr
-#'    \code{inner_perf} \tab ROC AUCs from the inner cross-validation. \cr
-#'    \code{target_max} \tab the number of parts which yields the highest AUC \cr
-#'    \code{target_1se} \tab the smallest number of parts where AUC is within 1 standard error of optimum \cr
+#'    \code{test_auc} \tab The testing split ROC AUC values for each model type and target part count from inner cross-validation. \cr
+#'    \code{inner_perf} \tab ROC AUCs on testing splits from the inner cross-validation. \cr
+#'    \code{target_max} \tab the number of parts which yields the highest testing split AUC \cr
+#'    \code{target_1se} \tab the smallest number of parts where testing split AUC is within 1 standard error of optimum \cr
 #'    \tab \cr
 #'}
 #' @export
 #'
 #' @seealso \code{\link[diffCompVarRcpp]{dcvScores}}
 #'
+#' @importFrom rlang .data
 #' @importFrom foreach %:%
 #'
 tune.dicovar <- function(X,
@@ -50,6 +51,7 @@ tune.dicovar <- function(X,
                          repeats = 5,
                          seed = NULL
                          ) {
+
   # get levels from response variable
   classes = as.character(levels(as.factor(Y)))
 
@@ -59,7 +61,7 @@ tune.dicovar <- function(X,
     # df - all data
     # mdl - model for which we're calculating ROC AUC
     roc_auc <- function(df, mdl) {
-      df_ <- dplyr::filter(df, model == mdl)
+      df_ <- dplyr::filter(df, .data$model == mdl)
       return(as.numeric(pROC::auc(formula = frm, data = df_, levels = classes,
                                   direction = "<")))
     }
@@ -68,7 +70,7 @@ tune.dicovar <- function(X,
     # df - all data
     # mdl - model for which we're calculating ROC AUC
     roc_auc <- function(df, mdl) {
-      df_ <- dplyr::filter(df, model == mdl)
+      df_ <- dplyr::filter(df, .data$model == mdl)
 
       return(as.numeric(pROC::auc(pROC::multiclass.roc(formula = frm, data = df_,
                                                        levels = classes,
@@ -174,12 +176,12 @@ tune.dicovar <- function(X,
                                              ts.id = innerFold$test_ids,
                                              max_sparsity = max_sparsity
         )
-        # extract model performance
+        # extract ridge and ensemble model performance on test split
         perf = data.frame(Seed = fld$sd1,Fold = f,tar_Features ,tar_dcvInner$Performance)
-        # calculate model AUCs on test data
+        # calculate ensemble model AUCs on test splits within discovery cohort
         pmat = tar_dcvInner$all_model_preds %>%
-          dplyr::group_by(model) %>%
-          dplyr::summarise(train_auc = roc_auc(., model)) %>%
+          dplyr::group_by(.data$model) %>%
+          dplyr::summarise(train_auc = roc_auc(., .data$model)) %>%
           data.frame()
 
         # add in model AUCs on training data
@@ -190,9 +192,10 @@ tune.dicovar <- function(X,
         # report progress
         message(paste0("Finished fitting DCV model with ", tar_Features, " features"))
         # return list of results
-        list(Inner_Perf = perf, Train_AUC = pmat,
-             Ridge_Model = tar_dcvInner$glm_model$mdl,
-             DCV_Scores = tar_dcvInner$final_dcv)
+        list(Inner_Perf = perf, # ridge and ensemble perf on test split
+             Train_AUC = pmat, # ridge, ensemble, and ensemble components on test split
+             Ridge_Model = tar_dcvInner$glm_model$mdl, # ridge model fit on training split
+             DCV_Scores = tar_dcvInner$final_dcv) # DCV scores calculated for training split
       } # end target features loop
       # return inner results
       message(paste0("Finished rep ", fld$sd1, ", fold ", f))
@@ -214,24 +217,26 @@ tune.dicovar <- function(X,
 
   # the smallest number of features within 1 std. error of best AUC
   target_1se <- dcv_perf_results$Train_AUC %>%
-    dplyr::filter(stringr::str_starts(model, "DCV")) %>%
-    dplyr::group_by(model,targetFeatures) %>%
-    dplyr::summarise(Mean_AUC = mean(train_auc),
-              SE_AUC = sqrt(mean((train_auc - Mean_AUC)^2)/(n_folds - 1))) %>%
+    # only ridge or ensemble models
+    dplyr::filter(stringr::str_starts(.data$model, "DCV")) %>%
+    dplyr::group_by(.data$model, .data$targetFeatures) %>%
+    # mean and SD of AUCs on test splits
+    dplyr::summarise(Mean_AUC = mean(.data$train_auc),
+              SE_AUC = sqrt(mean((.data$train_auc - .data$Mean_AUC)^2)/(n_folds - 1))) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(Upper_SE = Mean_AUC + SE_AUC,
-           Max_AUC = max(Mean_AUC),
-           In_Range = Upper_SE >= Max_AUC) %>%
-    dplyr::filter(In_Range) %>%
+    dplyr::mutate(Upper_SE = .data$Mean_AUC + .data$SE_AUC,
+           Max_AUC = max(.data$Mean_AUC),
+           In_Range = .data$Upper_SE >= .data$Max_AUC) %>%
+    dplyr::filter(.data$In_Range) %>%
     { min(.$targetFeatures) }
 
   ## optimum number of parts ----
 
-  # the number of features that gave best AUC in DCV models
+  # the number of features that gave best test split AUC in DCV models
   train_auc1 = dcv_perf_results$Train_AUC %>%
-    dplyr::group_by(model,targetFeatures) %>%
+    dplyr::group_by(.data$model, .data$targetFeatures) %>%
     dplyr::summarise_all(.funs = mean) %>%
-    dplyr::filter(stringr::str_detect(model,"DCV"))
+    dplyr::filter(stringr::str_detect(.data$model, "DCV"))
   target_max = train_auc1$targetFeatures[which.max(train_auc1$train_auc)]
 
   message(paste("Optimum model contains", target_max, "features."))
@@ -239,9 +244,13 @@ tune.dicovar <- function(X,
 
   return(list(tt_data = ttData,
               cv_folds = cv_folds,
-              train_auc = dcv_perf_results$Train_AUC,
+              # model performance on test splits, including individual ensemble components
+              test_auc = dcv_perf_results$Train_AUC,
+              # ridge and ensemble performance on test splits
               inner_perf = dcv_perf_results$Inner_Perf,
+              # DCV scores calculated on training splits
               inner_dcv_scores = dcv_perf_results$DCV_Scores,
+              # ridge models fit on training splits
               inner_ridge_models = dcv_perf_ridge_mdls,
               target_max = target_max,
               target_1se = target_1se))

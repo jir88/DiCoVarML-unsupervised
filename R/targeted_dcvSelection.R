@@ -233,6 +233,7 @@ targeted_dcvSelection = function(trainx,
     }
     ## Save Performance of ridge regression model
     perf = data.frame(Approach = "DCV-ridgeRegression",
+                      # AUC of ridge model on the test split
                       AUC = as.numeric(mroc.dcvlasso),
                       # number of features in model
                       number_parts = n_parts,

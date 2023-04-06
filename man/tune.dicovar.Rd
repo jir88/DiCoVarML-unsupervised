@@ -54,10 +54,10 @@ tune.dicovar(
 A list containing:\tabular{ll}{
    \code{cv_folds} \tab The cross-validation folds used for performance estimation. \cr
    \tab \cr
-   \code{train_auc} \tab The training set ROC AUC values for each model type and target part count. \cr
-   \code{inner_perf} \tab ROC AUCs from the inner cross-validation. \cr
-   \code{target_max} \tab the number of parts which yields the highest AUC \cr
-   \code{target_1se} \tab the smallest number of parts where AUC is within 1 standard error of optimum \cr
+   \code{test_auc} \tab The testing split ROC AUC values for each model type and target part count from inner cross-validation. \cr
+   \code{inner_perf} \tab ROC AUCs on testing splits from the inner cross-validation. \cr
+   \code{target_max} \tab the number of parts which yields the highest testing split AUC \cr
+   \code{target_1se} \tab the smallest number of parts where testing split AUC is within 1 standard error of optimum \cr
    \tab \cr
 }
 }
