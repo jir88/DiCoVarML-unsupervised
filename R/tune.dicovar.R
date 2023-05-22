@@ -140,9 +140,9 @@ tune.dicovar <- function(X,
       ## impute zeroes
       message(paste0("R", fld$sd1, "F", f, " - impute zeroes"))
       trainx = data.frame(selEnergyPermR::fastImputeZeroes(innerFold$train_Data,
-                                           impFactor = innerFold$imp_factor))
+                                           impFactor = innerFold$imputeFactor))
       testx = data.frame(selEnergyPermR::fastImputeZeroes(innerFold$test_data,
-                                          impFactor = innerFold$imp_factor))
+                                          impFactor = innerFold$imputeFactor))
 
       ## compute log ratios
       message(paste0("R", fld$sd1, "F", f, " - compute logratios"))
