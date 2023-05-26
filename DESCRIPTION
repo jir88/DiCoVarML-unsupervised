@@ -1,7 +1,7 @@
 Package: DiCoVarML
 Type: Package
 Title: The Differential Compositional Variation Machine Learning Framework
-Version: 0.1.0
+Version: 0.1.1
 Author: Andrew Hinton <andrew84@email.unc.edu>
 Maintainer: Andrew Hinton <andrew84@email.unc.edu>
 Description: Contains functions required to carry out machine learning classification task with high-dimesnsional log ratios features common in omics data. This is applicable after count data are converted to relative abundance (compositional data) or normalization such that the absolute counts are not of interest.

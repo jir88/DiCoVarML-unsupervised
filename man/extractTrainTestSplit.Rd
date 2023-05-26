@@ -37,6 +37,8 @@ A list containing:\tabular{ll}{
    \tab \cr
    \code{y_test} \tab test class/group labels \cr
    \tab \cr
+   \code{imputeFactor} \tab Multiplicative imputation factor calculated on both training and test data together. \cr
+   \tab \cr
    \code{minCLass} \tab minority class for AUPRC calculations and Class imbalance Problems. *Valid for binary class labels only*  \cr
    \tab \cr
    \code{majClass} \tab minority class for AUPRC calculations and Class imbalance Problems. *Valid for binary class labels only*   \cr
