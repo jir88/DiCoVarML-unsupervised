@@ -15,7 +15,7 @@
 #' @param min_connected Should logratio network be constructed with the minimum number of edges required to include a given number of parts, or should all edges with DCV scores >0 be retained?
 #' @param ensemble character vector of models to use in the DCV ensemble
 #' @param max_sparsity Parts with a higher proportion of zero/missing values will be dropped before zero imputation.
-#' @param global_imputation Should multiplicative zero imputation be performed with a constant factor across each train/test split, or should factors be calculated separately?
+#' @param global_imputation Should multiplicative zero imputation be performed with a constant factor across each train/test split, or should factors be calculated separately? If calculated separately, factors will be divided by 10 to give a 'safety factor' allowance for lower minimum values in the other split.
 #' @param test.parts integer vector giving the number of parts to be tested
 #' @param k_fold estimate model performance using k-fold cross validation
 #' @param repeats the number of times to repeat k-fold cross validation
@@ -143,6 +143,12 @@ tune.dicovar <- function(X,
                                                    extractTelAbunance = F)
       ## impute zeroes
       message(paste0("R", fld$sd1, "F", f, " - impute zeroes"))
+      # use same imputation factor for both?
+      if(global_imputation) {
+        imp_fact <- innerFold$imputeFactor
+      } else { # have fastImputeZeroes calculate it for us
+        imp_fact <- NULL
+      }
       trainx = data.frame(selEnergyPermR::fastImputeZeroes(innerFold$train_Data,
                                            impFactor = innerFold$imputeFactor))
       testx = data.frame(selEnergyPermR::fastImputeZeroes(innerFold$test_data,

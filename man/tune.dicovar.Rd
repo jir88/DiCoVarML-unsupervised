@@ -15,6 +15,7 @@ tune.dicovar(
   min_connected = FALSE,
   ensemble = c("ranger", "pls", "svmRadial", "glmnet", "rangerE"),
   max_sparsity = 0.9,
+  global_imputation = FALSE,
   test.parts = c(4, 8, 12),
   k_fold = 2,
   repeats = 5,
@@ -42,6 +43,8 @@ tune.dicovar(
 
 \item{max_sparsity}{Parts with a higher proportion of zero/missing values will be dropped before zero imputation.}
 
+\item{global_imputation}{Should multiplicative zero imputation be performed with a constant factor across each train/test split, or should factors be calculated separately? If calculated separately, factors will be divided by 10 to give a 'safety factor' allowance for lower minimum values in the other split.}
+
 \item{test.parts}{integer vector giving the number of parts to be tested}
 
 \item{k_fold}{estimate model performance using k-fold cross validation}
@@ -52,10 +55,12 @@ tune.dicovar(
 }
 \value{
 A list containing:\tabular{ll}{
+   \code{tt_data} \tab The discovery/validation split and shared imputation factor. \cr
    \code{cv_folds} \tab The cross-validation folds used for performance estimation. \cr
-   \tab \cr
    \code{test_auc} \tab The testing split ROC AUC values for each model type and target part count from inner cross-validation. \cr
    \code{inner_perf} \tab ROC AUCs on testing splits from the inner cross-validation. \cr
+   \code{inner_dcv_scores} \tab Differential composition variation (DCV) scores calculated on training splits. \cr
+   \code{inner_ridge_models} \tab Ridge penalized logistic regressions models fit on training splits. \cr
    \code{target_max} \tab the number of parts which yields the highest testing split AUC \cr
    \code{target_1se} \tab the smallest number of parts where testing split AUC is within 1 standard error of optimum \cr
    \tab \cr
