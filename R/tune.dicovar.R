@@ -15,16 +15,19 @@
 #' @param min_connected Should logratio network be constructed with the minimum number of edges required to include a given number of parts, or should all edges with DCV scores >0 be retained?
 #' @param ensemble character vector of models to use in the DCV ensemble
 #' @param max_sparsity Parts with a higher proportion of zero/missing values will be dropped before zero imputation.
+#' @param global_imputation Should multiplicative zero imputation be performed with a constant factor across each train/test split, or should factors be calculated separately?
 #' @param test.parts integer vector giving the number of parts to be tested
 #' @param k_fold estimate model performance using k-fold cross validation
 #' @param repeats the number of times to repeat k-fold cross validation
 #' @param seed random seed to use for reproducible results, or NULL to use the current seed
 #'
 #' @return A list containing:\tabular{ll}{
+#'    \code{tt_data} \tab The discovery/validation split and shared imputation factor. \cr
 #'    \code{cv_folds} \tab The cross-validation folds used for performance estimation. \cr
-#'    \tab \cr
 #'    \code{test_auc} \tab The testing split ROC AUC values for each model type and target part count from inner cross-validation. \cr
 #'    \code{inner_perf} \tab ROC AUCs on testing splits from the inner cross-validation. \cr
+#'    \code{inner_dcv_scores} \tab Differential composition variation (DCV) scores calculated on training splits. \cr
+#'    \code{inner_ridge_models} \tab Ridge penalized logistic regressions models fit on training splits. \cr
 #'    \code{target_max} \tab the number of parts which yields the highest testing split AUC \cr
 #'    \code{target_1se} \tab the smallest number of parts where testing split AUC is within 1 standard error of optimum \cr
 #'    \tab \cr
@@ -46,6 +49,7 @@ tune.dicovar <- function(X,
                          min_connected = FALSE,
                          ensemble = c("ranger","pls","svmRadial","glmnet","rangerE"),
                          max_sparsity = .9,
+                         global_imputation = FALSE,
                          test.parts = c(4, 8, 12),
                          k_fold = 2,
                          repeats = 5,
