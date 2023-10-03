@@ -24,8 +24,8 @@ computeDCVStrength = function(dcv_mat){
   el = tidyr::separate(data = el,col = 1,into = c("num","denom"),sep = "___",remove = F)
   g = igraph::graph_from_edgelist(as.matrix(el[,2:3]))
   igraph::E(g)$weight = el$Score
-  nodeStrength = data.frame(Node = names(igraph::strength(g)),
-                            Str = igraph::strength(g)) %>%
+  g_str <- igraph::strength(g)
+  nodeStrength <- data.frame(Node = names(g_str), Str = g_str) %>%
     dplyr::arrange(dplyr::desc(Str))
   nodeStrength
 }
