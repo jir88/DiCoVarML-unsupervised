@@ -38,9 +38,9 @@ extractTrainTestSplit =
            extractTelAbunance=T){
 
     if(extractTelAbunance){
-      message("Fold-",fold," Extract Partitions, Estimate Sparisty, Impute Zeroes and Close Data")
+      message("Fold-",fold," Extract Partitions, Estimate Sparsity, Impute Zeroes and Close Data")
     }else{
-      message("Fold-",fold," Extract Partitions, Estimate Sparisty, and Return Counts (if Counts Exist) without Imputation")
+      message("Fold-",fold," Extract Partitions, Estimate Sparsity, and Return Counts (if Counts Exist) without Imputation")
     }
 
     suppressMessages(suppressWarnings({
