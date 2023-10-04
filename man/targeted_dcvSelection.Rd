@@ -57,7 +57,7 @@ targeted_dcvSelection(
 
 \item{ts.id}{test set id matrix. Can be found in output list from partitioning functions i.e.  kfoldDataPartition(),lodo_partition(),etc. Can be manually entered nrows = nrows(testx)}
 
-\item{seed}{Random Seed control for reproducibility}
+\item{seed}{Not currently used}
 
 \item{max_sparsity}{max sparsity of parts/taxa/etc. For example max_sparsity=0.10 would mean to only retain parts/taxa/etc present in at least 10\% of all samples.}
 

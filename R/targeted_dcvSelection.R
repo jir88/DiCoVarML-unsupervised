@@ -17,7 +17,7 @@
 #' @param use_rfe should a random forest recursive elimination model be trained
 #' @param alpha_ glmnet alpha parameter for fitting the final ridge regression model
 #' @param ts.id test set id matrix. Can be found in output list from partitioning functions i.e.  kfoldDataPartition(),lodo_partition(),etc. Can be manually entered nrows = nrows(testx)
-#' @param seed Random Seed control for reproducibility
+#' @param seed Not currently used
 #' @param max_sparsity max sparsity of parts/taxa/etc. For example max_sparsity=0.10 would mean to only retain parts/taxa/etc present in at least 10\% of all samples.
 #' @param useRidgeWeights should ensemble model first be weighted by ridge regression coefficients?
 #' @param scaledata should train data be scaled (test data scaled based on train)
