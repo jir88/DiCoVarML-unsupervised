@@ -10,7 +10,7 @@
 #' @param lrs.train An optional supplied logratio matrix for training data; must be supplied if dcv scores are pre computed
 #' @param lrs.test An optional supplied logratio matrix for test data; must be supplied if dcv scores are pre computed
 #' @param minConnected should the ratio network be minimally connected or threshold with dcv_score>0
-#' @param ensemble ensemble model definition
+#' @param ensemble ensemble model definition, or FALSE to skip fitting ensemble models
 #' @param tarFeatures number of parts/taxa/etc. to retain (independent from number of ratios to retain)
 #' @param imp_factor factor to multiplicative impute count zeros
 #' @param select_randomFeatures should random parts/taxa/etc. be selected; useful for benchmarking
@@ -249,7 +249,6 @@ targeted_dcvSelection = function(trainx,
 
 
 
-    message("Train Ensemble Model - (Step 3 of 4)")
     # Train Ensemble with Ridge Features ----
 
     # optionally scale features using ridge regression weights before
@@ -285,38 +284,45 @@ targeted_dcvSelection = function(trainx,
     weight.test = test_data2
 
     ## Train Ensemble Model
-    ph = trainML_Models(trainLRs = train_data2,
-                        testLRs = test_data2,
-                        ytrain = y_label,
-                        y_test = y_test,
-                        testIDs = ts.id,
-                        models = ensemble )
-    # get test set predictions for each model
-    pmat = ph$predictionMatrix
-    # average predictions across all models
-    pmat = pmat %>%
-      dplyr::group_by(.data$ID, .data$Status) %>%
-      dplyr::select(-.data$model) %>%
-      dplyr::summarise_all(.funs = mean)
-    pmat = data.frame(pmat)
-    # calculate ROC on averaged predictions
-    mroc = pROC::multiclass.roc(pmat$Status,pmat[,classes]);mroc
-    ## Compute Number of Parts (again)
-    cn = colnames(train_data2)
-    n_ratios = length(cn)
-    uniqueParts = unique(as.vector(stringr::str_split(cn,"___",2,simplify = T)))
-    n_parts  = dplyr::n_distinct(uniqueParts)
-    ## Save Performance
-    perf = data.frame(Approach = "DCV-ridgeEnsemble",
-                      AUC = as.numeric(pROC::auc(mroc)),
-                      number_parts = n_parts,
-                      number_ratios = ncol(train_data2),
-                      comp_time = 1, #compTime[3]+compTime2[3],
-                      base_dims = baseDims)
-    # add performance to existing ridge model performance data frame
-    result = rbind(result,perf)
-    # save averaged predictions from ensemble
-    prob_matrices[["ridgeEnsemble"]] = pmat
+
+    # if user has supplied ensemble models to use
+    if(is.character(ensemble) & sum(is.na(ensemble)) == 0) {
+      message("Train Ensemble Model - (Step 3 of 4)")
+      ph = trainML_Models(trainLRs = train_data2,
+                          testLRs = test_data2,
+                          ytrain = y_label,
+                          y_test = y_test,
+                          testIDs = ts.id,
+                          models = ensemble )
+      # get test set predictions for each model
+      pmat = ph$predictionMatrix
+      # average predictions across all models
+      pmat = pmat %>%
+        dplyr::group_by(.data$ID, .data$Status) %>%
+        dplyr::select(-.data$model) %>%
+        dplyr::summarise_all(.funs = mean)
+      pmat = data.frame(pmat)
+      # calculate ROC on averaged predictions
+      mroc = pROC::multiclass.roc(pmat$Status,pmat[,classes]);mroc
+      ## Compute Number of Parts (again)
+      cn = colnames(train_data2)
+      n_ratios = length(cn)
+      uniqueParts = unique(as.vector(stringr::str_split(cn,"___",2,simplify = T)))
+      n_parts  = dplyr::n_distinct(uniqueParts)
+      ## Save Performance
+      perf = data.frame(Approach = "DCV-ridgeEnsemble",
+                        AUC = as.numeric(pROC::auc(mroc)),
+                        number_parts = n_parts,
+                        number_ratios = ncol(train_data2),
+                        comp_time = 1, #compTime[3]+compTime2[3],
+                        base_dims = baseDims)
+      # add performance to existing ridge model performance data frame
+      result = rbind(result,perf)
+      # save averaged predictions from ensemble
+      prob_matrices[["ridgeEnsemble"]] = pmat
+    } else {
+      message("Skipping Ensemble Model - (Step 3 of 4)")
+    }
 
 
     message("Train RFE Model - (Step 4 of 4)")
@@ -357,37 +363,40 @@ targeted_dcvSelection = function(trainx,
         message("number of features = ",ncol(train_data2))
 
         ## Train Ensemble Model
-        ph = trainML_Models(trainLRs = train_data2,
-                            testLRs = test_data2,
-                            ytrain = y_label,
-                            y_test = y_test,
-                            testIDs = ts.id,
-                            models = ensemble)
+        # if user has supplied ensemble models to use
+        if(is.character(ensemble) & sum(is.na(ensemble)) == 0) {
+          ph = trainML_Models(trainLRs = train_data2,
+                              testLRs = test_data2,
+                              ytrain = y_label,
+                              y_test = y_test,
+                              testIDs = ts.id,
+                              models = ensemble)
 
-        ## Compute Performance
+          ## Compute Performance
 
-        pmat = ph$predictionMatrix
-        pmat = pmat %>%
-          dplyr::group_by(.data$ID, .data$Status) %>%
-          dplyr::select(-.data$model) %>%
-          dplyr::summarise_all(.funs = mean)
-        pmat = data.frame(pmat)
-        mroc = pROC::multiclass.roc(pmat$Status,pmat[,classes]);mroc
+          pmat = ph$predictionMatrix
+          pmat = pmat %>%
+            dplyr::group_by(.data$ID, .data$Status) %>%
+            dplyr::select(-.data$model) %>%
+            dplyr::summarise_all(.funs = mean)
+          pmat = data.frame(pmat)
+          mroc = pROC::multiclass.roc(pmat$Status,pmat[,classes]);mroc
 
 
-        ## Compute Number of Part
-        cn = colnames(train_data2)
-        n_ratios = length(cn)
-        uniqueParts = unique(as.vector(stringr::str_split(cn,"___",2,simplify = T)))
-        n_parts  = dplyr::n_distinct(uniqueParts)
+          ## Compute Number of Part
+          cn = colnames(train_data2)
+          n_ratios = length(cn)
+          uniqueParts = unique(as.vector(stringr::str_split(cn,"___",2,simplify = T)))
+          n_parts  = dplyr::n_distinct(uniqueParts)
 
-        ## Save Performance
-        perf = data.frame(Approach = "DCV-rfRFE",AUC = as.numeric(pROC::auc(mroc)),
-                          number_parts = n_parts,number_ratios = ncol(train_data2),
-                          comp_time = 1, #compTime[3]+compTime2[3],
-                          base_dims = baseDims)
-        result = rbind(result,perf)
-        prob_matrices[["rfRFE"]] = pmat
+          ## Save Performance
+          perf = data.frame(Approach = "DCV-rfRFE",AUC = as.numeric(pROC::auc(mroc)),
+                            number_parts = n_parts,number_ratios = ncol(train_data2),
+                            comp_time = 1, #compTime[3]+compTime2[3],
+                            base_dims = baseDims)
+          result = rbind(result,perf)
+          prob_matrices[["rfRFE"]] = pmat
+        }
       }))
       rfe_Features = list(train = train_data2,test =test_data2)
     }
@@ -396,9 +405,16 @@ targeted_dcvSelection = function(trainx,
 
 
     # Return results ----
+    if(is.character(ensemble) & sum(is.na(ensemble)) == 0) {
+      all_model_preds <- ph$predictionMatrix
+      ensemble_pmat <- pmat
+    } else {
+      all_model_preds <- NULL
+      ensemble_pmat <- NULL
+    }
     return(list(Performance = result, # summary stats for fitted models
                 # test sample predictions from individual ensemble components
-                all_model_preds = ph$predictionMatrix,
+                all_model_preds = all_model_preds,
                 # the ridge regression model and its input data
                 glm_model = model_,
                 # optionally ridge-weighted features used for ensemble fitting

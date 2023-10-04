@@ -43,7 +43,7 @@ targeted_dcvSelection(
 
 \item{minConnected}{should the ratio network be minimally connected or threshold with dcv_score>0}
 
-\item{ensemble}{ensemble model definition}
+\item{ensemble}{ensemble model definition, or FALSE to skip fitting ensemble models}
 
 \item{tarFeatures}{number of parts/taxa/etc. to retain (independent from number of ratios to retain)}
 

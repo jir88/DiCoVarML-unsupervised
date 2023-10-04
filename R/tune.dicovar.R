@@ -13,7 +13,7 @@
 #' @param performRFE Should random forest feature elimination be used when fitting DCV models?
 #' @param useRidgeWeight Should features be scaled using ridge regression weights before DCV ensemble fitting?
 #' @param min_connected Should logratio network be constructed with the minimum number of edges required to include a given number of parts, or should all edges with DCV scores >0 be retained?
-#' @param ensemble character vector of models to use in the DCV ensemble
+#' @param ensemble character vector of models to use in the DCV ensemble, or FALSE to skip fitting ensemble models
 #' @param max_sparsity Parts with a higher proportion of zero/missing values will be dropped before zero imputation.
 #' @param global_imputation Should multiplicative zero imputation be performed with a constant factor across each train/test split, or should factors be calculated separately? If calculated separately, factors will be divided by 10 to give a 'safety factor' allowance for lower minimum values in the other split.
 #' @param test.parts integer vector giving the number of parts to be tested
@@ -188,16 +188,22 @@ tune.dicovar <- function(X,
         )
         # extract ridge and ensemble model performance on test split
         perf = data.frame(Seed = fld$sd1,Fold = f,tar_Features ,tar_dcvInner$Performance)
-        # calculate ensemble model AUCs on test splits within discovery cohort
-        pmat = tar_dcvInner$all_model_preds %>%
-          dplyr::group_by(.data$model) %>%
-          dplyr::summarise(train_auc = roc_auc(., .data$model)) %>%
-          data.frame()
 
-        # add in model AUCs on training data
-        pmat = rbind(pmat,
-                     data.frame(model = tar_dcvInner$Performance$Approach,
-                                train_auc = as.numeric(tar_dcvInner$Performance$AUC)))
+        # pull out model AUCs on training data
+        pmat = data.frame(model = tar_dcvInner$Performance$Approach,
+                                train_auc = as.numeric(tar_dcvInner$Performance$AUC))
+
+        # if user has supplied ensemble models to use
+        if(is.character(ensemble) & sum(is.na(ensemble)) == 0) {
+          # calculate ensemble model AUCs on test splits within discovery cohort
+          pmat_ensemble = tar_dcvInner$all_model_preds %>%
+            dplyr::group_by(.data$model) %>%
+            dplyr::summarise(train_auc = roc_auc(., .data$model)) %>%
+            data.frame()
+          # add ensemble performance to others
+          pmat <- rbind(pmat, pmat_ensemble)
+        }
+        # note the number of features in the models
         pmat$targetFeatures = tar_Features
         # report progress
         message(paste0("Finished fitting DCV model with ", tar_Features, " features"))

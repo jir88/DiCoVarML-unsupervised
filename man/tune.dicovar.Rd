@@ -39,7 +39,7 @@ tune.dicovar(
 
 \item{min_connected}{Should logratio network be constructed with the minimum number of edges required to include a given number of parts, or should all edges with DCV scores >0 be retained?}
 
-\item{ensemble}{character vector of models to use in the DCV ensemble}
+\item{ensemble}{character vector of models to use in the DCV ensemble, or FALSE to skip fitting ensemble models}
 
 \item{max_sparsity}{Parts with a higher proportion of zero/missing values will be dropped before zero imputation.}
 
