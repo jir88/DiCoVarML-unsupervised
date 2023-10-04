@@ -19,7 +19,7 @@
 #' @param test.parts integer vector giving the number of parts to be tested
 #' @param k_fold estimate model performance using k-fold cross validation
 #' @param repeats the number of times to repeat k-fold cross validation
-#' @param seed random seed to use for reproducible results, or NULL to use the current seed
+#' @param seed random seed to use for reproducible results, or NULL to generate a seed from the current value of \code{\link[base]{.Random.seed}}
 #'
 #' @return A list containing:\tabular{ll}{
 #'    \code{tt_data} \tab The discovery/validation split and shared imputation factor. \cr

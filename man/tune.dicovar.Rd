@@ -51,7 +51,7 @@ tune.dicovar(
 
 \item{repeats}{the number of times to repeat k-fold cross validation}
 
-\item{seed}{random seed to use for reproducible results, or NULL to use the current seed}
+\item{seed}{random seed to use for reproducible results, or NULL to generate a seed from the current value of \code{\link[base]{.Random.seed}}}
 }
 \value{
 A list containing:\tabular{ll}{
